@@ -1,4 +1,4 @@
-package com.softwire.it;
+package com.softwire.it.cjo;
 
 /**
  * Hello world!

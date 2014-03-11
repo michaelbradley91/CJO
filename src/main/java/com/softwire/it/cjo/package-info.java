@@ -1,6 +1,5 @@
 /**
  * ****************
- *       dd/mm/yyyy
  * Date: 10/03/2014
  * @author michael
  * ****************
@@ -14,7 +13,7 @@
  * See specific classes for their own theoretical contribution.
  *
  */
-package com.softwire.it;
+package com.softwire.it.cjo;
 /**
  * Notes to self:
  * 
