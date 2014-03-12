@@ -14,10 +14,18 @@ import com.softwire.it.cjo.resource_control.exceptions.RepresentativeChildExcept
  * This class is for the representative of a group of resources. Every resource will have a representative, and
  * each connected component of the graph will have exactly one representative.
  * Representatives are used internally to control how resources are acquired!
+ * 
+ * TODO: Note:
+ * The way representatives are stored in vertices is not as efficient as in a disjoint set forest
+ * for adding... For this, we would need to make the resources refer through themselves, which is kind of weird...
+ * We'd then need to pay attention to the depth...
+ * Kind of awkward when resources can be removed... Probably this heuristic is "ok enough"
+ * Could still do this within the representatives themselves though!!! Good point...
  *
  */
 final class Representative implements Comparable<Representative> {
-	//TODO: implement some official fairness by storing a queue of listeners here!!
+	//TODO: implement some official fairness by storing a queue of listeners somehow!!
+	//Probably easiest to do this through the resource graph's own methods...
 	
 	//The Big Integer used as the id of this representative. New representatives are guaranteed to obtain ids larger than before through this...
 	private static BigInteger universalCount;
@@ -28,11 +36,11 @@ final class Representative implements Comparable<Representative> {
 	private final BigInteger id;
 	//The lock for this representative
 	private final Semaphore lock;
-	//Remember if this representative is still the official representative being used in the graph,
-	//or if it has been removed
-	private boolean removed;
+	//These are both visible to the resource graph primarily...
 	//The parent representative if applicable
-	private Representative parent;
+	Representative parent;
+	//The rank of the representative, as in a disjoint set forest!
+	int rank;
 	
 	/**
 	 * Construct a new representative for some group of resources. The representative assumes it is in
@@ -49,8 +57,10 @@ final class Representative implements Comparable<Representative> {
 		universalCountSemaphore.release();
 		//Create the semaphore!
 		lock = new Semaphore(1,true);
-		removed = false; //this representative is in use by default
+		//removed = false; //this representative is in use by default
 		lock.acquireUninterruptibly(); //got it!!
+		parent = this;
+		rank = 0;
 	}
 	
 	/**
@@ -58,23 +68,10 @@ final class Representative implements Comparable<Representative> {
 	 * that any resources holding representatives call this first as otherwise exceptions will be thrown...
 	 */
 	public Representative getTrueRepresentative() {
-		if (parent==null) {
-			return this;
+		if (parent!=this) {
+			parent = parent.getTrueRepresentative(); //update reference - heuristic
 		}
-		return parent.getTrueRepresentative();
-	}
-	
-	/**
-	 * Set the parent representative for this representative
-	 * @param parent - the parent to refer to
-	 * @throws RepresentativeChildException - if this representative already had a parent.
-	 * (Call getTrueRepresentative for the top level one - the one you actually need...)
-	 */
-	public void setParentRepresentative(Representative parent) {
-		if (parent!=null) {
-			throw new RepresentativeChildException();
-		}
-		this.parent = parent;
+		return parent;
 	}
 	
 	/**
@@ -89,23 +86,6 @@ final class Representative implements Comparable<Representative> {
 	 */
 	public void releaseLock() {
 		lock.release();
-	}
-	
-	/**
-	 * Set whether or not this representative has been removed. You should hold the lock
-	 * before making this call.
-	 * @param removed - true if you want this representative to believe it has been removed. False otherwise
-	 */
-	public void setRemoved(boolean removed) {
-		this.removed = removed;
-	}
-	
-	/**
-	 * You should not call this if you have not acquired the lock
-	 * @return - true if this representative believes it is not in control of a group in the resource graph
-	 */
-	public boolean isRemoved() {
-		return removed;
 	}
 	
 	@Override

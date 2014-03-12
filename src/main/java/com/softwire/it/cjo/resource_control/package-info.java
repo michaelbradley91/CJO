@@ -32,4 +32,11 @@ package com.softwire.it.cjo.resource_control;
  * So it is a bit like a disjoint set forest, but I can't find or think of a way to allow for splitting in the graph efficiently... ):
  * It seems to be the best I can do...
  * 
+ * PROBLEM:
+ * 
+ * I've been efficiently trying to avoid changing the representatives whenever possible... This is a problem, because it makes it hard to know
+ * when a representative has been removed (i.e: it hasn't...)
+ * Still, if a representative has changed, I should... I think be able to tell... If I just ask the node, potentially asynchronously,
+ * what its representative is, then if it didn't change, I should have access right?
+ * 
  */
