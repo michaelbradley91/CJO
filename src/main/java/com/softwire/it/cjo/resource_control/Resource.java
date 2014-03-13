@@ -1,5 +1,7 @@
 package com.softwire.it.cjo.resource_control;
 
+import java.util.Collection;
+import java.util.HashSet;
 
 /**
  * ****************
@@ -18,6 +20,10 @@ package com.softwire.it.cjo.resource_control;
 public class Resource {
 	//Remember the representative for this resource
 	private Representative representative;
+	//The mark for this resource
+	boolean mark; //visible for speed...
+	//The collection of vertices I am connected to (resources "are" the graph)
+	Collection<Resource> neighbours; //adjacency list - visible for speed
 	
 	/**
 	 * Construct a new resource
@@ -25,6 +31,8 @@ public class Resource {
 	 */
 	Resource(Representative representative) {
 		this.representative = representative;
+		mark = false; //not marked by default
+		neighbours = new HashSet<Resource>();
 	}
 	
 	/**

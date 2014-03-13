@@ -3,8 +3,6 @@ package com.softwire.it.cjo.resource_control;
 import java.math.BigInteger;
 import java.util.concurrent.Semaphore;
 
-import com.softwire.it.cjo.resource_control.exceptions.RepresentativeChildException;
-
 /**
  * ****************
  * Date: 11/03/2014
@@ -14,18 +12,18 @@ import com.softwire.it.cjo.resource_control.exceptions.RepresentativeChildExcept
  * This class is for the representative of a group of resources. Every resource will have a representative, and
  * each connected component of the graph will have exactly one representative.
  * Representatives are used internally to control how resources are acquired!
- * 
- * TODO: Note:
- * The way representatives are stored in vertices is not as efficient as in a disjoint set forest
- * for adding... For this, we would need to make the resources refer through themselves, which is kind of weird...
- * We'd then need to pay attention to the depth...
- * Kind of awkward when resources can be removed... Probably this heuristic is "ok enough"
- * Could still do this within the representatives themselves though!!! Good point...
  *
  */
 final class Representative implements Comparable<Representative> {
-	//TODO: implement some official fairness by storing a queue of listeners somehow!!
-	//Probably easiest to do this through the resource graph's own methods...
+	//TODO: avoid global synchronisation
+	/*
+	 * This is the last location where global synchronisation takes place.
+	 * It can be avoided via randomly assigned ints, and then, during a comparison if equality is detected,
+	 * a second newly generated randomised int is constructed to break the tie (and again if necessary - could "theoretically" go horribly wrong
+	 * but so so very unlikely)
+	 * 
+	 * We have a guarantee that comparisons will not be made in parallel?? No... Hm...
+	 */
 	
 	//The Big Integer used as the id of this representative. New representatives are guaranteed to obtain ids larger than before through this...
 	private static BigInteger universalCount;
@@ -45,8 +43,7 @@ final class Representative implements Comparable<Representative> {
 	/**
 	 * Construct a new representative for some group of resources. The representative assumes it is in
 	 * use when it is made.
-	 * The representative keeps control of the lock (so sort of in control of the creator). Hence, the lock
-	 * should be released after construction when you are done with it!
+	 * The representative does not hold the lock upon creation, so you should lock it if you want control.
 	 */
 	public Representative() {
 		//Get a unique id....
@@ -58,7 +55,6 @@ final class Representative implements Comparable<Representative> {
 		//Create the semaphore!
 		lock = new Semaphore(1,true);
 		//removed = false; //this representative is in use by default
-		lock.acquireUninterruptibly(); //got it!!
 		parent = this;
 		rank = 0;
 	}

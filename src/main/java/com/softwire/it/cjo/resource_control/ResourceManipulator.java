@@ -1,6 +1,11 @@
 package com.softwire.it.cjo.resource_control;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
+
+import com.softwire.it.cjo.resource_control.exceptions.ResourceNotHeldException;
+import com.softwire.it.cjo.resource_control.exceptions.ResourceReleasedException;
 
 /**
  * ****************
@@ -19,23 +24,33 @@ import java.util.Set;
  * adding and removing edges or other vertices in the graph.
  * 
  * Once you're done, you release the resources via the manipulator, after which you cannot modify them through this manipulator any more.
+ * 
+ * The resource manipulator itself is NOT thread safe - it is designed to be used by one thread (but of course multiple manipulators
+ * can be handled in parallel)
  */
 public class ResourceManipulator {
-	//Remember all of the resources that we have locked
-	private final Set<Resource> resources;
+	//Remember all of the representatives that we have locked
+	final Collection<Representative> representatives; //visibile agan for speed (wouldn't normally prefer this...)
 	//Remember the resource graph you are a part of...
 	private final ResourceGraph graph;
 	//Remember if the manipulator has released its locks!!
 	private boolean hasReleasedResources;
+	//Remember if I was marked as "old" when the resources were allocated (this matters to the resource manipulator - not to me - but it is really
+	//a LOT faster if I store it myself
+	final boolean isOld; //visible for speed
+	//Remember all of the resources that may have been affected by the removal of edges (and so may need to be scanned at the very end)
+	private final Set<Resource> splitResources;
 	
 	/**
 	 * Construct a new resource manipulator
 	 * @param graph - the graph that is being manipulated
-	 * @param resources - the resources themselves
+	 * @param representatives - the representatives that we have locked
 	 */
-	public ResourceManipulator(ResourceGraph graph,Set<Resource> resources) {
+	public ResourceManipulator(ResourceGraph graph,Collection<Representative> representatives, boolean isOld) {
 		this.graph = graph;
-		this.resources = resources;
+		this.representatives = representatives;
+		this.isOld = isOld;
+		this.splitResources = new HashSet<Resource>();
 	}
 	
 	/**
@@ -44,8 +59,10 @@ public class ResourceManipulator {
 	 * @throws ResourceReleasedException - if this manipulator has released its resources already (because you told it to)
 	 */
 	public Resource addResource() {
-		//TODO: implement!
-		return null;
+		if (hasReleasedResources) {
+			throw new ResourceReleasedException();
+		}
+		return graph.addResource(this);
 	}
 	
 	/**
@@ -56,7 +73,17 @@ public class ResourceManipulator {
 	 * through the manipulator)
 	 */
 	public void removeResource(Resource resource) {
-		//TODO: implement!
+		if (hasReleasedResources) {
+			throw new ResourceReleasedException();
+		}
+		//Check we control this resource
+		if (representatives.contains(resource.getRepresentative())) {
+			splitResources.add(resource);
+			splitResources.addAll(resource.neighbours); //a lot of people may be affected...
+			graph.removeResource(resource);
+		} else {
+			throw new ResourceNotHeldException();
+		}
 	}
 	
 	/**
@@ -68,7 +95,14 @@ public class ResourceManipulator {
 	 * through the manipulator)
 	 */
 	public void addDependency(Resource resource1, Resource resource2) {
-		//TODO: implement!
+		if (hasReleasedResources) {
+			throw new ResourceReleasedException();
+		}
+		if (representatives.contains(resource1.getRepresentative()) && representatives.contains(resource2.getRepresentative())) {
+			graph.addDependency(resource1, resource2);
+		} else {
+			throw new ResourceNotHeldException();
+		}
 	}
 	
 	/**
@@ -80,7 +114,16 @@ public class ResourceManipulator {
 	 * through the manipulator)
 	 */
 	public void removeDependency(Resource resource1, Resource resource2) {
-		//TODO: implement!
+		if (hasReleasedResources) {
+			throw new ResourceReleasedException();
+		}
+		if (representatives.contains(resource1.getRepresentative()) && representatives.contains(resource2.getRepresentative())) {
+			splitResources.add(resource1);
+			splitResources.add(resource2);
+			graph.removeDependency(resource1, resource2);
+		} else {
+			throw new ResourceNotHeldException();
+		}
 	}
 	
 	/**
@@ -88,7 +131,12 @@ public class ResourceManipulator {
 	 * Once executed, you cannot use the manipulator again
 	 */
 	public void releaseResources() {
-		//TODO: implement!
+		if (hasReleasedResources) {
+			return; //can't do this twice
+		}
+		//Firstly, update all of the split resources
+		graph.updateDisconnectedResources(this, splitResources);
+		graph.releaseResources(this);
 	}
 
 }
