@@ -1,2 +1,5 @@
 #I use this to simplify pushing and pulling from the git repo...
 update.sh
+
+syntax: regexp
+^logs/(?!README.mds)
