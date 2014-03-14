@@ -313,7 +313,7 @@ public class ResourceGraph {
 	//Wait if there are busy processes on this semaphore:
 	private final Semaphore waitSemaphore = new Semaphore(1,true);
 	//The official threshold for when a resource is declared old
-	private final static int OLD_THRESHOLD = 0;
+	private final static int OLD_THRESHOLD = 10;
 	
 	
 	/**
