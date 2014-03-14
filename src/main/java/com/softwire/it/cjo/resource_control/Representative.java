@@ -114,11 +114,6 @@ final class Representative implements Comparable<Representative> {
 		}
 	}
 	
-	//Only possible to be equal by reference equality
-	public boolean equals(Object obj) {
-		return obj==this;
-	}
-	
 	//Get the next id for a tie breaking situation
 	private int getId(int index) {
 		int id;

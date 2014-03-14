@@ -28,11 +28,17 @@ import java.util.concurrent.Semaphore;
  *
  */
 public class ResourceGraph {
+	/**
+	 * The resource graph instance. There should only ever be one in use for an application
+	 * (as you should never mix resources between graphs, and if they are cleanly separated, there won't be any overhead
+	 * in the computation anyway)
+	 */
+	public static final ResourceGraph INSTANCE = new ResourceGraph();
 	
 	/**
 	 * Construct a new initially empty resource graph
 	 */
-	public ResourceGraph() {}
+	private ResourceGraph() {}
 	
 	/**
 	 * Adds a resource to the graph. Currently, the resource is locked by you until the resource manipulator that called this is released

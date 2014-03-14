@@ -14,7 +14,7 @@ import java.util.HashSet;
  * The resource graph that it is a part of.<br>
  * Its representative in the resource graph.<br>
  * <br>
- * Equality is reference equality, so each one created is unique.
+ * Equality is reference equality, so each one created is unique.<br>
  *
  */
 public class Resource {
@@ -49,9 +49,5 @@ public class Resource {
 	 */
 	void setRepresentative(Representative representative) {
 		this.representative = representative;
-	}
-	
-	public boolean equals(Object obj) {
-		return this==obj; //reference equality!
 	}
 }
