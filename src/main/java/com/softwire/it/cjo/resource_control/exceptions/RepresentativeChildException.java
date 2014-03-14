@@ -1,13 +1,13 @@
 package com.softwire.it.cjo.resource_control.exceptions;
 
 /**
- * ****************
- * Date: 11/03/2014
- * @author michael
- * ****************
- * 
+ * ****************<br>
+ * Date: 14/03/2014<br>
+ * Author:  michael<br>
+ * ****************<br>
+ * <br>
  * This exception is thrown when an attempt is made to use a representative which is now a child in
- * the hierarchy. You should always use the top level representative.
+ * the hierarchy. You should always use the top level representative.<br>
  * (Call getTrueRepresentative and update your reference first)
  *
  */

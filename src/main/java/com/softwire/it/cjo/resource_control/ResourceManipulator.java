@@ -1,5 +1,6 @@
 package com.softwire.it.cjo.resource_control;
 
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -8,25 +9,28 @@ import com.softwire.it.cjo.resource_control.exceptions.ResourceNotHeldException;
 import com.softwire.it.cjo.resource_control.exceptions.ResourceReleasedException;
 
 /**
- * ****************
- * Date: 11/03/2014
- * @author michael
- * ****************
- * 
- * This class controls how you manipulate the resource graph. This is the idea:
- * 
+ * ****************<br>
+ * Date: 14/03/2014<br>
+ * Author:  michael<br>
+ * ****************<br>
+ * <br>
+ * This class controls how you manipulate the resource graph. This is the idea:<br>
+ * <br>
  * When you want to manipulate the resource graph in any way, you call "acquireResources"
  * on the graph, and it will pass you a resource manipulator. The resource manipulator is aware
  * that you have all of the resources that you specified you wanted to acquire (as well as any connected
- * to at least one of those resources in the graph potentially)
- * 
+ * to at least one of those resources in the graph potentially)<br>
+ * <br>
  * Through the manipulator, you can then modify the shape of the graph so that it only affects these resources. That includes
- * adding and removing edges or other vertices in the graph.
- * 
- * Once you're done, you release the resources via the manipulator, after which you cannot modify them through this manipulator any more.
- * 
+ * adding and removing edges or other vertices in the graph.<br>
+ * <br>
+ * Once you're done, you release the resources via the manipulator, after which you cannot modify them through this manipulator any more.<br>
+ * <br>
  * The resource manipulator itself is NOT thread safe - it is designed to be used by one thread (but of course multiple manipulators
- * can be handled in parallel)
+ * can be handled in parallel)<br>
+ * <br>
+ * In total, n operations in the resource manipulator has worst case running time of O(n*log(n)) I believe
+ * 
  */
 public class ResourceManipulator {
 	//Remember all of the representatives that we have locked
@@ -40,17 +44,20 @@ public class ResourceManipulator {
 	final boolean isOld; //visible for speed
 	//Remember all of the resources that may have been affected by the removal of edges (and so may need to be scanned at the very end)
 	private final Set<Resource> splitResources;
+	//Remember the max rep id for creating new representatives respecting the required ordering.
+	BigInteger maxRepId; //visible for speed, and controlled by the resource graph
 	
 	/**
 	 * Construct a new resource manipulator
 	 * @param graph - the graph that is being manipulated
 	 * @param representatives - the representatives that we have locked
 	 */
-	public ResourceManipulator(ResourceGraph graph,Collection<Representative> representatives, boolean isOld) {
+	public ResourceManipulator(ResourceGraph graph,Collection<Representative> representatives, boolean isOld, BigInteger maxRepId) {
 		this.graph = graph;
 		this.representatives = representatives;
 		this.isOld = isOld;
 		this.splitResources = new HashSet<Resource>();
+		this.maxRepId = maxRepId;
 	}
 	
 	/**
@@ -99,7 +106,7 @@ public class ResourceManipulator {
 			throw new ResourceReleasedException();
 		}
 		if (representatives.contains(resource1.getRepresentative()) && representatives.contains(resource2.getRepresentative())) {
-			graph.addDependency(resource1, resource2);
+			graph.addDependency(this,resource1, resource2);
 		} else {
 			throw new ResourceNotHeldException();
 		}

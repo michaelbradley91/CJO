@@ -1,7 +1,7 @@
 package com.softwire.it.cjo.resource_control;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -12,18 +12,18 @@ import java.util.concurrent.Semaphore;
 
 
 /**
- * ****************
- * Date: 11/03/2014
- * @author michael
- * ****************
- * 
- * This class is a resource graph, which is used to store resources and the dependencies between them.
+ * ****************<br>
+ * Date: 14/03/2014<br>
+ * Author:  michael<br>
+ * ****************<br>
+ * <br>
+ * This class is a resource graph, which is used to store resources and the dependencies between them.<br>
  * Generally, you'll only want a single resource graph. Disconnected subgraphs are intended to behave independently
- * concurrently. Connected components must all be synchronised on to prevent concurrency bugs!
- * 
+ * concurrently. Connected components must all be synchronised on to prevent concurrency bugs!<br>
+ * <br>
  * In terms of the addition or removal of edges, it is wise to ensure that most of the graph won't disappear, because this
- * can trigger restarts within the algorithm and remove some certainty about what is going on!
- * 
+ * can trigger restarts within the algorithm and remove some certainty about what is going on!<br>
+ * <br>
  * (For CJO, channels are largely persistent)
  *
  */
@@ -42,7 +42,9 @@ public class ResourceGraph {
 	 */
 	Resource addResource(ResourceManipulator manipulator) {
 		//Construct the resource...
-		Representative newRep = new Representative();
+		BigInteger newId = manipulator.maxRepId.add(BigInteger.ONE); //the new id must be strictly larger than any previous resource
+		manipulator.maxRepId = newId;
+		Representative newRep = new Representative(newId); //make sure it is bigger.
 		newRep.acquireLock();
 		Resource resource = new Resource(newRep);
 		manipulator.representatives.add(newRep); //update the representatives
@@ -68,11 +70,13 @@ public class ResourceGraph {
 	/**
 	 * Add a dependency between resources to the graph. Dependencies are undirected. If the dependency already exists, this has no effect.
 	 * If one of the resources does not exist, this has no effect either!!
+	 * 
+	 * @param manipulator - important for assigning a new id to the new representative
 	 * @param resource1 - the first of the resources to add the edge between
 	 * @param resource2 - the second ''
 	 * 
 	 */
-	void addDependency(Resource resource1, Resource resource2) {
+	void addDependency(ResourceManipulator manipulator, Resource resource1, Resource resource2) {
 		if (resource1.equals(resource2)) {
 			return; //don' add self loops...
 		}
@@ -85,16 +89,15 @@ public class ResourceGraph {
 		//Now merge the two representatives...
 		Representative rep1 = resource1.getRepresentative();
 		Representative rep2 = resource2.getRepresentative();
+		//Note:
 		if (!rep1.equals(rep2)) {
 			//We need to merge the two
-			if (rep1.rank<rep2.rank) {
-				rep1.parent = rep2;
-			} else if (rep2.rank<rep1.rank) {
-				rep2.parent = rep1;
-			} else {
-				rep2.parent = rep1;
-				rep1.rank++;
-			}
+			//Add a rep on top
+			BigInteger newId = manipulator.maxRepId.add(BigInteger.ONE); //the new id must be strictly larger than any previous resource
+			manipulator.maxRepId = newId;
+			Representative newTop = new Representative(newId);
+			rep1.parent = newTop;
+			rep2.parent = newTop;
 		}
 	}
 	
@@ -183,10 +186,13 @@ public class ResourceGraph {
 		 * this method is the last one called by a manipulator before release anyway.
 		 */
 		//Now we have all of the disconnected sets, give them their new representatives...
+		BigInteger newId;
 		for (int i=0; i<disconnectedSets.size(); i++) {
 			if (i!=maxPos) {
+				newId = manipulator.maxRepId.add(BigInteger.ONE); //the new id must be strictly larger than any previous resource
+				manipulator.maxRepId = newId;
 				//We need to give these a new representative...
-				newRep = new Representative();
+				newRep = new Representative(newId);
 				newRep.acquireLock(); //lock it down first!
 				for (Resource resource : disconnectedSets.get(i)) {
 					resource.setRepresentative(newRep);
@@ -330,22 +336,25 @@ public class ResourceGraph {
 		 * Otherwise, remove all of the resources who belonged to that representative from the set we began with...
 		 * 
 		 */
-		Representative[] toAcquire;
-		Representative rep;
+		Representative rep, minRep, tempMinRep;
 		Set<Representative> uniqueReps = new HashSet<Representative>();
 		Map<Representative,List<Resource>> resourceMap = new HashMap<Representative,List<Resource>>();
 		for (Resource resource : resources) {
 			rep = resource.getRepresentative();
 			uniqueReps.add(rep);
 		}
-		toAcquire = (Representative[])uniqueReps.toArray();
-		Arrays.sort(toAcquire);
+		//Remember the minimum...
+		minRep = uniqueReps.isEmpty() ? null : uniqueReps.iterator().next();
+		for (Representative representative : uniqueReps) {
+			if (representative.compareTo(minRep)<0) {
+				minRep = representative;
+			}
+		}
 		//Remember the representatives we've successfully got...
 		Set<Representative> acquired = new HashSet<Representative>(); //containment will be frequently checked by the manipulator
-		int index = 0;
-		while (index<toAcquire.length) {
+		while (!resources.isEmpty()) {
 			//Try to get the first one...
-			toAcquire[index].acquireLock();
+			minRep.acquireLock();
 			//See if a resource uses this representative...
 			resourceMap.clear();
 			for (Resource resource : resources) {
@@ -356,20 +365,35 @@ public class ResourceGraph {
 				}
 				resourceMap.get(rep).add(resource);
 			}
-			if (resourceMap.containsKey(toAcquire[index])) {
+			uniqueReps = resourceMap.keySet();
+			tempMinRep = uniqueReps.iterator().next();
+			for (Representative representative : uniqueReps) {
+				if (representative.compareTo(tempMinRep)<0) {
+					tempMinRep = representative;
+				}
+			}
+			//The one we see must be the first, as we must lock in the right order.
+			if (tempMinRep.equals(minRep)) {
 				//Got a useful one! To the next index...
-				acquired.add(toAcquire[index]);
-				for (Resource resource : resourceMap.get(toAcquire[index])) {
+				acquired.add(minRep);
+				for (Resource resource : resourceMap.get(minRep)) {
 					resources.remove(resource); //for efficiency - don't need to consider these again
 				}
-				index++; //hope the array is still up-to-date...
+				//Get the next smallest...
+				uniqueReps.remove(minRep);
+				if (!uniqueReps.isEmpty()) {
+					minRep = uniqueReps.iterator().next();
+					for (Representative representative : uniqueReps) {
+						if (representative.compareTo(minRep)<0) {
+							minRep = representative;
+						}
+					}
+				} //else we're done!
 			} else {
 				//The representative is now useless... Better throw it away and start again...
-				toAcquire[index].releaseLock();
+				minRep.releaseLock();
 				noRestarts++;
-				toAcquire = (Representative[])resourceMap.keySet().toArray();
-				Arrays.sort(toAcquire);
-				index = 0; //need to start from the new representative too
+				minRep = tempMinRep; //need to start from the new representative too
 				if (!isOld && noRestarts>threshold) {
 					//Too many!!
 					addOldProcess();
@@ -377,7 +401,15 @@ public class ResourceGraph {
 				}
 			}
 		}
-		return new ResourceManipulator(this, acquired, isOld);
+		//Find the largest rep...
+		Representative maxRep = acquired.isEmpty() ? null : acquired.iterator().next();
+		for (Representative representative : acquired) {
+			if (maxRep.compareTo(representative)<0) {
+				maxRep = representative;
+			}
+		}
+		BigInteger baseid = maxRep==null ? BigInteger.ZERO : maxRep.baseId;
+		return new ResourceManipulator(this, acquired, isOld, baseid);
 	}
 	
 	/**
@@ -411,7 +443,7 @@ public class ResourceGraph {
 		}
 		Set<Representative> acquired = new HashSet<Representative>();
 		acquired.add(rep);
-		return new ResourceManipulator(this, acquired, isOld);
+		return new ResourceManipulator(this, acquired, isOld, rep.baseId);
 	}
 	
 	/**
@@ -419,7 +451,7 @@ public class ResourceGraph {
 	 */
 	public ResourceManipulator getManipulator() {
 		//Again - more efficient and a common case...
-		return new ResourceManipulator(this, new HashSet<Representative>(), false);
+		return new ResourceManipulator(this, new HashSet<Representative>(), false, BigInteger.ZERO);
 	}
 	
 	/**

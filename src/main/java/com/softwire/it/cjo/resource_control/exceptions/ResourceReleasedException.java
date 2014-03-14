@@ -1,13 +1,13 @@
 package com.softwire.it.cjo.resource_control.exceptions;
 
 /**
- * ****************
- * Date: 11/03/2014
- * @author michael
- * ****************
- * 
+ * ****************<br>
+ * Date: 14/03/2014<br>
+ * Author:  michael<br>
+ * ****************<br>
+ * <br>
  * This exception is thrown when an attempt is made to manipulate a resource in the resource graph
- * that is not held by the resource manipulator.
+ * that is not held by the resource manipulator
  *
  */
 public class ResourceReleasedException extends RuntimeException {

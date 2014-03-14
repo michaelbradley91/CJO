@@ -1,9 +1,9 @@
 /**
- * ****************
- * Date: 11/03/2014
- * @author michael
- * ****************
- * 
+ * ****************<br>
+ * Date: 11/03/2014<br>
+ * Author:  michael<br>
+ * ****************<br>
+ * <br>
  * This package contains all exceptions specific to the resource graph
  *
  */

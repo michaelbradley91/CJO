@@ -4,16 +4,16 @@ import java.util.Collection;
 import java.util.HashSet;
 
 /**
- * ****************
- * Date: 11/03/2014
- * @author michael
- * ****************
- * 
- * This class is the abstract representation of a resource. Each resource knows the following:
- * 
- * The resource graph that it is a part of.
- * Its representative in the resource graph.
- * 
+ * ****************<br>
+ * Date: 14/03/2014<br>
+ * Author:  michael<br>
+ * ****************<br>
+ * <br>
+ * This class is the abstract representation of a resource. Each resource knows the following:<br>
+ * <br>
+ * The resource graph that it is a part of.<br>
+ * Its representative in the resource graph.<br>
+ * <br>
  * Equality is reference equality, so each one created is unique.
  *
  */
