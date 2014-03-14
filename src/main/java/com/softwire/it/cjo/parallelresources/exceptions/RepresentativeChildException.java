@@ -1,4 +1,4 @@
-package com.softwire.it.cjo.resource_control.exceptions;
+package com.softwire.it.cjo.parallelresources.exceptions;
 
 /**
  * ****************<br>

@@ -1,12 +1,12 @@
-package com.softwire.it.cjo.resource_control;
+package com.softwire.it.cjo.parallelresources;
 
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.softwire.it.cjo.resource_control.exceptions.ResourceNotHeldException;
-import com.softwire.it.cjo.resource_control.exceptions.ResourceReleasedException;
+import com.softwire.it.cjo.parallelresources.exceptions.ResourceNotHeldException;
+import com.softwire.it.cjo.parallelresources.exceptions.ResourceReleasedException;
 
 /**
  * ****************<br>

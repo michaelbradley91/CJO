@@ -16,7 +16,7 @@
  * (which enforces the atomicity of actions)
  *
  */
-package com.softwire.it.cjo.resource_control;
+package com.softwire.it.cjo.parallelresources;
 /**
  * Notes to self:<br>
  * <br>

@@ -7,4 +7,4 @@
  * This package contains all exceptions specific to the resource graph
  *
  */
-package com.softwire.it.cjo.resource_control.exceptions;
+package com.softwire.it.cjo.parallelresources.exceptions;

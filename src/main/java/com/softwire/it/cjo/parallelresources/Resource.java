@@ -1,4 +1,4 @@
-package com.softwire.it.cjo.resource_control;
+package com.softwire.it.cjo.parallelresources;
 
 import java.util.Collection;
 import java.util.HashSet;

@@ -1,4 +1,4 @@
-package com.softwire.it.cjo.resource_control;
+package com.softwire.it.cjo.parallelresources;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -98,12 +98,14 @@ public class ResourceGraph {
 		//Note:
 		if (!rep1.equals(rep2)) {
 			//We need to merge the two
-			//Add a rep on top
-			BigInteger newId = manipulator.maxRepId.add(BigInteger.ONE); //the new id must be strictly larger than any previous resource
-			manipulator.maxRepId = newId;
-			Representative newTop = new Representative(newId);
-			rep1.parent = newTop;
-			rep2.parent = newTop;
+			//Add the larget rep on top (so that the rep's for resources only increase)
+			if (rep1.compareTo(rep2)>0) {
+				//rep1 bigger
+				rep2.parent = rep1;
+			} else {
+				//rep2 bigger
+				rep1.parent = rep2;
+			}
 		}
 	}
 	
