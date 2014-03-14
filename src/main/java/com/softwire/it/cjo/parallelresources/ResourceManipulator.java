@@ -26,10 +26,10 @@ import com.softwire.it.cjo.parallelresources.exceptions.ResourceReleasedExceptio
  * <br>
  * Once you're done, you release the resources via the manipulator, after which you cannot modify them through this manipulator any more.<br>
  * <br>
- * The resource manipulator itself is NOT thread safe - it is designed to be used by one thread (but of course multiple manipulators
- * can be handled in parallel)<br>
+ * The resource manipulator is thread safe, but it is only intended to be used by one thread (otherwise you will be forced to synchronise)<br>
+ * TODO: assess if this is worth it, or if the synchronised tags should be removed<br>
  * <br>
- * In total, n operations in the resource manipulator has worst case running time of O(n*log(n)) I believe
+ * In total, n operations in the resource manipulator has worst case running time of O(n*log(n)) I believe<br>
  * 
  */
 public class ResourceManipulator {
@@ -65,7 +65,7 @@ public class ResourceManipulator {
 	 * @return - the resource that was just added.
 	 * @throws ResourceReleasedException - if this manipulator has released its resources already (because you told it to)
 	 */
-	public Resource addResource() {
+	public synchronized Resource addResource() {
 		if (hasReleasedResources) {
 			throw new ResourceReleasedException();
 		}
@@ -79,7 +79,7 @@ public class ResourceManipulator {
 	 * @throws ResourceNotHeldException - if the manipulator does not hold this resource, because it was not initially acquired (or added
 	 * through the manipulator)
 	 */
-	public void removeResource(Resource resource) {
+	public synchronized void removeResource(Resource resource) {
 		if (hasReleasedResources) {
 			throw new ResourceReleasedException();
 		}
@@ -101,7 +101,7 @@ public class ResourceManipulator {
 	 * @throws ResourceNotHeldException - if the manipulator does not hold either of the given resources, because one was not initially acquired (or added
 	 * through the manipulator)
 	 */
-	public void addDependency(Resource resource1, Resource resource2) {
+	public synchronized void addDependency(Resource resource1, Resource resource2) {
 		if (hasReleasedResources) {
 			throw new ResourceReleasedException();
 		}
@@ -120,7 +120,7 @@ public class ResourceManipulator {
 	 * @throws ResourceNotHeldException - if the manipulator does not hold either of the given resources, because one was not initially acquired (or added
 	 * through the manipulator)
 	 */
-	public void removeDependency(Resource resource1, Resource resource2) {
+	public synchronized void removeDependency(Resource resource1, Resource resource2) {
 		if (hasReleasedResources) {
 			throw new ResourceReleasedException();
 		}
@@ -137,10 +137,11 @@ public class ResourceManipulator {
 	 * Release all of the resources held by this manipulator.
 	 * Once executed, you cannot use the manipulator again
 	 */
-	public void releaseResources() {
+	public synchronized void releaseResources() {
 		if (hasReleasedResources) {
 			return; //can't do this twice
 		}
+		hasReleasedResources = true;
 		//Firstly, update all of the split resources
 		graph.updateDisconnectedResources(this, splitResources);
 		graph.releaseResources(this);

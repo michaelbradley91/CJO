@@ -87,6 +87,9 @@ final class Representative implements Comparable<Representative> {
 	
 	@Override
 	public int compareTo(Representative rep) {
+		if (rep==this) {
+			return 0;
+		}
 		//Enable an ordering according to the ids. This is important for non-deadlocking acquisition of resources.
 		int baseComp = this.baseId.compareTo(rep.baseId);
 		if (baseComp!=0) {
