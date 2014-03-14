@@ -431,6 +431,11 @@ public class ResourceGraph {
 		int noRestarts = 0;
 		int threshold = OLD_THRESHOLD;
 		boolean isOld = false;
+		if (noOldProcesses>0) {
+			//Wait!
+			waitSemaphore.acquireUninterruptibly();
+			waitSemaphore.release();
+		}
 		Representative rep;
 		while (true) {
 			rep = resource.getRepresentative();
