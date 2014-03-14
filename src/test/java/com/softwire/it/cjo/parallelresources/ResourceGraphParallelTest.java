@@ -275,7 +275,6 @@ public class ResourceGraphParallelTest {
 		@Override
 		public void run() {
 			for (int i=0; i<NO_INTERACTIONS; i++) {
-				//Logger.getLogger(getClass()).trace("On interaction " + i);
 				//Choose how many resources to interact with... (could be a lot)
 				int noResources = random.nextInt(NO_RESOURCES)+1;
 				Resource[] currentResources = new Resource[noResources];

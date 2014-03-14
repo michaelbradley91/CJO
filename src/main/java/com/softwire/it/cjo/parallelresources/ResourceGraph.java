@@ -10,9 +10,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.Semaphore;
 
-import org.apache.log4j.Logger;
-
-
 /**
  * ****************<br>
  * Date: 14/03/2014<br>
@@ -330,14 +327,11 @@ public class ResourceGraph {
 		int noRestarts = 0;
 		int threshold = OLD_THRESHOLD*(resources.size()); //If I go above this in the number of restarts, then i will be old!
 		boolean isOld = false;
-		//Logger logger = Logger.getLogger(ResourceGraph.class);
 		if (noOldProcesses>0) {
-			//logger.trace("acquireResources 1: made to wait");
 			//Wait!
 			waitSemaphore.acquireUninterruptibly();
 			waitSemaphore.release();
 		}
-		//logger.trace("acquireResources 1: no longer waiting");
 		//Doing stuff...
 		/*
 		 * The plan:
@@ -358,21 +352,16 @@ public class ResourceGraph {
 			uniqueReps.add(rep);
 		}
 		minRep = uniqueReps.isEmpty() ? null : uniqueReps.iterator().next();
-		//logger.trace("acquireResources 1: gathered unique reps.");
 		for (Representative representative : uniqueReps) {
-			//logger.trace("acquireResources 1: inside loop!");
 			if (representative.compareTo(minRep)<0) {
 				minRep = representative;
 			}
 		}
-		//logger.trace("acquireResources 1: got min rep");
 		//Remember the representatives we've successfully got...
 		Set<Representative> acquired = new HashSet<Representative>(); //containment will be frequently checked by the manipulator
 		while (!resources.isEmpty()) {
 			//Try to get the first one...
-			//logger.trace("acquireResources 1: acquiring lock on min rep");
 			minRep.acquireLock();
-			//logger.trace("acquireResources 1: lock acquired. Checking it is the right one");
 			//See if a resource uses this representative...
 			resourceMap.clear();
 			for (Resource resource : resources) {
@@ -383,7 +372,6 @@ public class ResourceGraph {
 				}
 				resourceMap.get(rep).add(resource);
 			}
-			//logger.trace("acquireResources 1: constructed resource map");
 			uniqueReps = resourceMap.keySet();
 			tempMinRep = uniqueReps.iterator().next();
 			for (Representative representative : uniqueReps) {
@@ -391,16 +379,13 @@ public class ResourceGraph {
 					tempMinRep = representative;
 				}
 			}
-			//logger.trace("acquireResources 1: got new min rep");
 			//The one we see must be the first, as we must lock in the right order.
 			if (tempMinRep.equals(minRep)) {
-				//logger.trace("acquireResources 1: min reps were equal");
 				//Got a useful one! To the next index...
 				acquired.add(minRep);
 				for (Resource resource : resourceMap.get(minRep)) {
 					resources.remove(resource); //for efficiency - don't need to consider these again
 				}
-				//logger.trace("acquireResources 1: removed unnecessary resources");
 				//Get the next smallest...
 				uniqueReps.remove(minRep);
 				if (!uniqueReps.isEmpty()) {
@@ -411,23 +396,18 @@ public class ResourceGraph {
 						}
 					}
 				} //else we're done!
-				//logger.trace("acquireResources 1: got new min representative. Going to next lock");
 			} else {
-				//logger.trace("acquireResources 1: failed to get the right rep. Restarting");
 				//The representative is now useless... Better throw it away and start again...
 				minRep.releaseLock();
 				noRestarts++;
 				minRep = tempMinRep; //need to start from the new representative too
 				if (!isOld && noRestarts>threshold) {
 					//Too many!!
-					//logger.trace("acquireResources 1: registering as old");
 					addOldProcess();
-					//logger.trace("acquireResources 1: registration complete");
 					isOld = true; //only do this once
 				}
 			}
 		}
-		//logger.trace("acquireResources 1: acquired all resources");
 		//Find the largest rep...
 		Representative maxRep = acquired.isEmpty() ? null : acquired.iterator().next();
 		for (Representative representative : acquired) {
@@ -435,7 +415,6 @@ public class ResourceGraph {
 				maxRep = representative;
 			}
 		}
-		//logger.trace("acquireResources 1: identifited max rep, passing manipulator");
 		BigInteger baseid = maxRep==null ? BigInteger.ZERO : maxRep.baseId;
 		return new ResourceManipulator(this, acquired, isOld, baseid);
 	}
