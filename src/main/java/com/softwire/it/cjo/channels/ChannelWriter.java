@@ -12,16 +12,38 @@ package com.softwire.it.cjo.channels;
  * @param <Message> - the type of messages being sent down this channel
  * 
  */
-public interface ChannelWriter<Message> {
+public class ChannelWriter<Message> {
+	//This is used to access the underlying channel's methods
+	private final Channel<Message> channel;
+	
+	/**
+	 * Construct a channel writer from this channel
+	 * @param channel - the channel to be written to
+	 */
+	ChannelWriter(Channel<Message> channel) {
+		this.channel = channel;
+	}
+	
 	/**
 	 * @param message - a message o send into the channel
 	 * @throws - TODO (channel closed exception) - don't forget interrupts too, but these are channel specific potentially...
 	 */
-	public void write(Message message);
+	public void write(Message message) {
+		channel.write(message);
+	}
 	
 	/**
 	 * Close the write end of the channel (if this was already closed, this does nothing).
 	 * Whether or not this has any effect depends on the specific channel.
 	 */
-	public void closeWriteEnd();
+	public void closeWriteEnd() {
+		channel.closeWriteEnd();
+	}
+	
+	/**
+	 * @return - the underlying channel being written to
+	 */
+	protected Channel<Message> getChannel() {
+		return channel;
+	}
 }

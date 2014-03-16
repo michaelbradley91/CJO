@@ -14,7 +14,6 @@ package com.softwire.it.cjo.utilities;
  * Note: these are not necessarily true Mathematical functions - they may have side effects.
  */
 public interface Function<Input, Return> {
-	
 	/**
 	 * Evaluate the function with the given argument
 	 * @param input - the input argument

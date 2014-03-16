@@ -159,6 +159,31 @@ package com.softwire.it.cjo.channels;
  * 
  * I think that's how it is a going to work...
  * 
+ * Trying to determine the typing for classes...
  * 
+ * All classes need these standard methods in their implementation, but it is a problem as I want to hide
+ * these methods from the user. Granted, I could just type cast everything, it is not very OOP...
+ * 
+ * I guess I'll have to make the classes abstract. ok - since Java doesn't support multiple extensions,
+ * I can't do it directly this way either... The problem is that generally knowing the channel is a reader
+ * or a writer is not enough for an alt - it needs to know the underlying implementation access methods.
+ * 
+ * This means the interfaces could do with protected methods, but this isn't possible either in Java.
+ * The "best" I can do seemingly is to use an abstract class called "channel" which hides the implementation specific
+ * methods, and then operators will typically cast channel readers and writers to channels...
+ * 
+ * To avoid the casting, I can enable the use of a method getChannel underneath the channel - not exactly
+ * brilliant, but since everyone knows it can be cast, I guess it is just better to be clear about it
+ * (I don't want later implementations of readers or writers not to be channels - so I wanted to avoid relying on this)
+ * 
+ * An alternative:
+ * 
+ * This is quite painful... however, I can perform the following mechanism:
+ * I can enable the user of a channel to get both the read and the write ends of a channel.
+ * We can then make both abstract, and use a protected method to get hold of he original channel again.
+ * 
+ * In the implementation, the methods would basically be forwarded. It is a bit of a pain for the user,
+ * as they have to constantly get the correct end of the channel... but I guess it should work...
+ * (Prevents bad casting too!)
  * 
  */
