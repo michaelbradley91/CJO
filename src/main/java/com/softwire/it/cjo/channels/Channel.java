@@ -3,10 +3,11 @@ package com.softwire.it.cjo.channels;
 import com.softwire.it.cjo.parallelresources.Resource;
 import com.softwire.it.cjo.parallelresources.ResourceGraph;
 import com.softwire.it.cjo.utilities.FIFOQueue;
+import com.softwire.it.cjo.utilities.FIFOQueue.Crate;
 
 /**
  * ****************<br>
- * Date: 16/03/2014<br>
+ * Date: 17/03/2014<br>
  * Author:  michael<br>
  * ****************<br>
  * <br>
@@ -41,9 +42,9 @@ import com.softwire.it.cjo.utilities.FIFOQueue;
  */
 public abstract class Channel<Message> {
 	//The list of writers
-	private final FIFOQueue<Channel<Message>> writers;
+	private final FIFOQueue<WaitingWriter<Message>> writers;
 	//The list of readers
-	private final FIFOQueue<Channel<Message>> readers;
+	private final FIFOQueue<WaitingReader<Message>> readers;
 	//My resource
 	private final Resource resource; //me!! (uniquely so)
 	//The read and write ends
@@ -54,8 +55,8 @@ public abstract class Channel<Message> {
 	 * Construct a new channel with no readers or writers waiting
 	 */
 	public Channel() {
-		writers = new FIFOQueue<Channel<Message>>();
-		readers = new FIFOQueue<Channel<Message>>();
+		writers = new FIFOQueue<WaitingWriter<Message>>();
+		readers = new FIFOQueue<WaitingReader<Message>>();
 		resource = ResourceGraph.INSTANCE.getManipulator().addResource();
 		reader = new ChannelReader<Message>(this);
 		writer = new ChannelWriter<Message>(this);
@@ -63,13 +64,17 @@ public abstract class Channel<Message> {
 	
 	/**
 	 * @return - a message read from this channel
-	 * @throws - TODO (channel closed exception) - don't forget interrupts too, but these are channel specific potentially...
+	 * @throws ChannelClosed - if the channel was closed before this method was called, or otherwise closed
+	 * before a writer passes you a message. It is recommended that you catch this!! It is only a RuntimeException
+	 * to avoid code obfuscation.
 	 */
 	public abstract Message read();
 	
 	/**
 	 * @param message - a message o send into the channel
-	 * @throws - TODO (channel closed exception) - don't forget interrupts too, but these are channel specific potentially...
+	 * @throws ChannelClosed - if the channel was closed before this method was called, or otherwise closed
+	 * before a reader receives your message. It is recommended that you catch this!! It is only a RuntimeException
+	 * to avoid code obfuscation.
 	 */
 	public abstract void write(Message message);
 	
@@ -103,5 +108,99 @@ public abstract class Channel<Message> {
 	 */
 	public final ChannelWriter<Message> getWriter() {
 		return writer;
+	}
+	
+	/*
+	 * Any sub classes are expected to make use of the following methods to register and deregister
+	 * the interest of readers and writers for this channel. This is necessary for most operators
+	 * that rely on the use of these methods - its a bit of a fragile base class issue I think..?
+	 * 
+	 * If you know a better way to do this, please tell me!!
+	 */
+	
+	/**
+	 * Add a reader to the internal list of readers for this channel. (Does not mean they are doing more than reading...
+	 * @param reader - the reader who is waiting to read
+	 * @return - the item to pass back to the channel if you desire to remove this reader.
+	 */
+	protected final Crate<WaitingReader<Message>> registerReader(WaitingReader<Message> reader) {
+		return readers.enqueue(reader);
+	}
+	
+	/**
+	 * @param reader - the reader to be removed from the internal list of readers
+	 */
+	protected final void deregisterReader(Crate<WaitingReader<Message>> reader) {
+		readers.remove(reader);
+	}
+	
+	/**
+	 * @return - the reader to read the next message from the channel, which has been deregistered automatically
+	 */
+	protected final WaitingReader<Message> getNextReader() {
+		return readers.dequeue();
+	}
+	
+	/**
+	 * @return - the number of processes waiting to read on this channel (according to these internal methods - assumes
+	 * they are actually used!)
+	 */
+	protected final int getNumberOfReaders() {
+		return readers.size();
+	}
+	
+	/**
+	 * @return - true iff there is at least one waiting reader held by the channel
+	 */
+	protected final boolean hasReader() {
+		return readers.size()==0;
+	}
+	
+	/**
+	 * Add a writer to the internal list of writers for this channel.
+	 * @param writer - the writer who is waiting to write to this channel
+	 * @return - the item to pass back to the channel if you desire to remove this writer.
+	 */
+	protected final Crate<WaitingWriter<Message>> registerWriter(WaitingWriter<Message> writer) {
+		return writers.enqueue(writer);
+	}
+	
+	/**
+	 * @param writer - the writer to be removed from the internal list of writers
+	 */
+	protected final void deregisterWriter(Crate<WaitingWriter<Message>> writer) {
+		writers.remove(writer);
+	}
+	
+	/**
+	 * @return - the writer to pass the next message down the channel, which has been deregistered automatically
+	 */
+	protected final WaitingWriter<Message> getNextWriter() {
+		return writers.dequeue();
+	}
+	
+	/**
+	 * @return - the number of processes waiting to read on this channel (according to these internal methods - assumes
+	 * they are actually used!)
+	 */
+	protected final int getNumberOfWriters() {
+		return writers.size();
+	}
+	
+	/**
+	 * @return - true iff there is at least one waiting reader held by the channel
+	 */
+	protected final boolean hasWriter() {
+		return writers.size()==0;
+	}
+	
+	/**
+	 * You are expected to acquire the resource of the channel before any interactions on it
+	 * (through the resource graph). Once you have finished your interactions, you should release
+	 * the resources (via your resource manipulator)
+	 * @return - the resource that this channel is represented by
+	 */
+	protected final Resource getResource() {
+		return resource;
 	}
 }

@@ -30,11 +30,11 @@ public final class FIFOQueue<T> {
      * The crate uses reference equality.
 	 *
 	 */
-	public final class Crate {
-		private Crate previous,next;
+	public static final class Crate<T> {
+		private Crate<T> previous,next;
 		private final T heldObj;
 		private boolean removed;
-		private Crate(Crate previous, Crate next, T heldObj) {
+		private Crate(Crate<T> previous, Crate<T> next, T heldObj) {
 			this.heldObj = heldObj;
 			this.previous = previous;
 			this.next = next;
@@ -54,8 +54,8 @@ public final class FIFOQueue<T> {
 	}
 	
 	//A dummy head for the front of the queue
-	private final Crate dummyHead;
-	private final Crate dummyTail;
+	private final Crate<T> dummyHead;
+	private final Crate<T> dummyTail;
 	//The number of items held in this queue
 	private int size;
 	
@@ -64,8 +64,8 @@ public final class FIFOQueue<T> {
 	 */
 	public FIFOQueue() {
 		//Initialise stuff...
-		dummyHead = new Crate(null,null,null);
-		dummyTail = new Crate(null,null,null);
+		dummyHead = new Crate<T>(null,null,null);
+		dummyTail = new Crate<T>(null,null,null);
 		dummyHead.previous = dummyHead;
 		dummyTail.next = dummyTail;
 		dummyHead.next = dummyTail;
@@ -77,8 +77,8 @@ public final class FIFOQueue<T> {
 	 * @param object - the object to add to the back of this FIFO queue
 	 * @return - the crate the object has been put in.
 	 */
-	public Crate enqueue(T object) {
-		Crate crate = new Crate(dummyHead,dummyHead.next,object);
+	public Crate<T> enqueue(T object) {
+		Crate<T> crate = new Crate<T>(dummyHead,dummyHead.next,object);
 		//Correct the head...
 		dummyHead.next.previous = crate;
 		dummyHead.next = crate;
@@ -90,23 +90,23 @@ public final class FIFOQueue<T> {
 	 * @return - the item at the front of the FIFO queue
 	 * @throws EmptyFIFOQueueException - if the queue was empty
 	 */
-	public Crate dequeue() {
+	public T dequeue() {
 		if (isEmpty()) {
 			throw new EmptyFIFOQueueException();
 		}
 		//Remove the tail...
-		Crate crate = dummyTail.previous;
+		Crate<T> crate = dummyTail.previous;
 		dummyTail.previous.previous.next = dummyTail;
 		dummyTail.previous = dummyTail.previous.previous;
 		crate.removed = true;
 		size--;
-		return crate;
+		return crate.getObject();
 	}
 	
 	/**
 	 * @param crate - the crate to remove from the FIFO queue... (if it was removed in the past, this has no effect
 	 */
-	public void remove(Crate crate) {
+	public void remove(Crate<T> crate) {
 		if (crate.removed) {
 			return;
 		}
