@@ -1,9 +1,8 @@
 package com.softwire.it.cjo.channels;
 
+import com.softwire.it.cjo.channels.ChannelFIFOQueue.Crate;
 import com.softwire.it.cjo.parallelresources.Resource;
 import com.softwire.it.cjo.parallelresources.ResourceGraph;
-import com.softwire.it.cjo.utilities.FIFOQueue;
-import com.softwire.it.cjo.utilities.FIFOQueue.Crate;
 
 /**
  * ****************<br>
@@ -42,9 +41,9 @@ import com.softwire.it.cjo.utilities.FIFOQueue.Crate;
  */
 public abstract class Channel<Message> {
 	//The list of writers
-	private final FIFOQueue<WaitingWriter<Message>> writers;
+	private final ChannelFIFOQueue<WaitingWriter<Message>> writers;
 	//The list of readers
-	private final FIFOQueue<WaitingReader<Message>> readers;
+	private final ChannelFIFOQueue<WaitingReader<Message>> readers;
 	//My resource
 	private final Resource resource; //me!! (uniquely so)
 	//The read and write ends
@@ -55,8 +54,8 @@ public abstract class Channel<Message> {
 	 * Construct a new channel with no readers or writers waiting
 	 */
 	public Channel() {
-		writers = new FIFOQueue<WaitingWriter<Message>>();
-		readers = new FIFOQueue<WaitingReader<Message>>();
+		writers = new ChannelFIFOQueue<WaitingWriter<Message>>();
+		readers = new ChannelFIFOQueue<WaitingReader<Message>>();
 		resource = ResourceGraph.INSTANCE.getManipulator().addResource();
 		reader = new ChannelReader<Message>(this);
 		writer = new ChannelWriter<Message>(this);
@@ -67,6 +66,7 @@ public abstract class Channel<Message> {
 	 * @throws ChannelClosed - if the channel was closed before this method was called, or otherwise closed
 	 * before a writer passes you a message. It is recommended that you catch this!! It is only a RuntimeException
 	 * to avoid code obfuscation.
+	 * @throws InterruptedException - if the process was interrupted before it could read a message
 	 */
 	public abstract Message read();
 	
@@ -75,6 +75,7 @@ public abstract class Channel<Message> {
 	 * @throws ChannelClosed - if the channel was closed before this method was called, or otherwise closed
 	 * before a reader receives your message. It is recommended that you catch this!! It is only a RuntimeException
 	 * to avoid code obfuscation.
+	 * @throws InterruptedException - if the process was interrupted before it could write a message
 	 */
 	public abstract void write(Message message);
 	
@@ -123,21 +124,21 @@ public abstract class Channel<Message> {
 	 * @param reader - the reader who is waiting to read
 	 * @return - the item to pass back to the channel if you desire to remove this reader.
 	 */
-	protected final Crate<WaitingReader<Message>> registerReader(WaitingReader<Message> reader) {
+	protected Crate<WaitingReader<Message>> registerReader(WaitingReader<Message> reader) {
 		return readers.enqueue(reader);
 	}
 	
 	/**
 	 * @param reader - the reader to be removed from the internal list of readers
 	 */
-	protected final void deregisterReader(Crate<WaitingReader<Message>> reader) {
+	protected void deregisterReader(Crate<WaitingReader<Message>> reader) {
 		readers.remove(reader);
 	}
 	
 	/**
 	 * @return - the reader to read the next message from the channel, which has been deregistered automatically
 	 */
-	protected final WaitingReader<Message> getNextReader() {
+	protected WaitingReader<Message> getNextReader() {
 		return readers.dequeue();
 	}
 	
@@ -161,7 +162,7 @@ public abstract class Channel<Message> {
 	 * @param writer - the writer who is waiting to write to this channel
 	 * @return - the item to pass back to the channel if you desire to remove this writer.
 	 */
-	protected final Crate<WaitingWriter<Message>> registerWriter(WaitingWriter<Message> writer) {
+	protected Crate<WaitingWriter<Message>> registerWriter(WaitingWriter<Message> writer) {
 		return writers.enqueue(writer);
 	}
 	

@@ -186,4 +186,77 @@ package com.softwire.it.cjo.channels;
  * as they have to constantly get the correct end of the channel... but I guess it should work...
  * (Prevents bad casting too!)
  * 
+ * ****************
+ * 
+ * You know, in a lot of ways, reading and writing from channels is much like applying an operation to them...
+ * Huh?
+ * So, what is a one one channel exactly?? When an alt starts waiting on such a channel, how exactly
+ * does it know that it can in fact wait (illegal state exception), when all it sees is a basic channel implementation...
+ * Ordinarily, the alt accesses the underlying methods of the class - are these channel specific? I guess so...
+ * 
+ * That means we'll need to let them be overridden...great...
+ * 
+ * I'm seriously thinking that a lot of the problems are just that channels should not support read and write
+ * methods by default, but that these should be "operations" and only the registering and deregistering of
+ * writers or readers should actually be managed by the channels...
+ * 
+ * It's kind of confusing. Consider for example an asynchronous channel. This needs to make sure its reader doesn't wait,
+ * but for a general read operation, this would be required... I guess it is quite a horrible mix...
+ * I think I'll stick to having read and write operations built in still - just a bit confusing
+ * 
+ * ****************
+ * 
+ * Update: read and write will be operations like everything else! However, to enforce that we can implement
+ * buffered channels, we're going to need to build a "buffer write operation" that needs to know where exactly in the pipeline
+ * of waiting writers it is...
+ * 
+ * We can do this with a more specialised FIFO queue, so I'm moving it up...
+ * 
+ * Hmm... while this will work, using listeners for queues to tell where you are in a queue is very expensive...
+ * The reason this is inefficient is because, as an operator, it allows both processes attempting to perform buffering, and
+ * processes not performing buffering to use the same channel. Hence, it is not dedicated to ensuring you wake up
+ * at the right time.
+ * 
+ * The issue with having a channel that is buffered specifically is how it should hold up processes during the protocol...
+ * The problem is kind of complicated - even for an alt!!
+ * 
+ * Consider an alt with an asynchronous channel - if the alt is reading, all is ok. If the alt is writing,
+ * it should be made to wait until the buffer is not full, and then it can write.
+ * 
+ * It seems that the channel could do with telling the reader or writer to wait on its own somehow... which I guess is why
+ * asynchronous channels exist, but how is an alt supposed to be aware of this? Grrr... If asynchronous writes were a special
+ * operator, then alts would need the ability to write asynchronously too...
+ * 
+ * Wow! This is heavily interlinked and awkward.
+ * So, it seems a bit crazy that an asynchronous write should be an operator used within alts, as it would make
+ * alts seriously complicated.
+ * 
+ * This is sooo hard to decide... ok - let's make the channel asynchronous somehow. This means it needs some kind of additional
+ * operator so that something like an alt can be made to wait if necessary.
+ * 
+ * It is possible to allow the channel to hold processes up when they are attempting to register as readers or writers,
+ * but an alt doesn't really want to be held up like this... yuck - I see why it's not in CSO - none of this plays well together.
+ * 
+ * Ok... so an alt would probably normally check to see if a writer is ready when it wants to read, but in a buffered channel
+ * this doesn't mean that it should get the writer's message necessarily... write?
+ * 
+ * Not exactly - but I guess it is as good as any other reader. The other side being when an alt is trying to write, it might
+ * notice there are no readers, and presume it should wait. It will then add itself as a waiting reader.
+ * 
+ * What could an asynchronous buffer do? The alt will be waiting unnecessarily. It could automatically call the writer
+ * if it is within the buffer - this would release the alt immediately, but there could be a concurrency issue with genuine readers...
+ * 
+ * Suppose it did keep track of which writers have been told that their readers arrived (albeit lying to certain processes)...
+ * It could spawn a new thread, and wait on the writer to tell it so, checking that it wasn't removed in the mean time.
+ * This might generate a lot of threads, but it isn't crazy... it is clean at least - it is probably what I will wind up doing...
+ * 
+ * I'd like not to do this for ordinary reads or writers, as this is a registration issue. Hence, maybe the read operation could
+ * call a special operation to signal it is a controlled read or whatever - it should be possible to avoid generating a new
+ * thread from within the channel.
+ * 
+ * Of course, that suggests reading and writing should be contained within the channel - something I'm not keen on - so
+ * maybe I will keep reading and writing within the channel. Yeeshh... (Avoiding close an asynchronous issues is more complicated still..
+ * 
+ * Maybe buffered channels should just have a fixed number of pretend readers - and keep track of the writers?
+ * 
  */

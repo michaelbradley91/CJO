@@ -1,5 +1,7 @@
 package com.softwire.it.cjo.channels;
 
+import com.softwire.it.cjo.parallelresources.ResourceManipulator;
+
 /**
  * ****************<br>
  * Date: 15/03/2014<br>
@@ -20,12 +22,15 @@ package com.softwire.it.cjo.channels;
 public interface WaitingReader<Message> {
 	/**
 	 * This states that the channel was closed so no interaction on the channel will take place.
+	 * @param manipulator - the resource manipulator being used to control this channel
 	 */
-	public void channelClosed();
+	public void channelClosed(ResourceManipulator manipulator);
 	
 	/**
 	 * Specifies that a writer has written to the this reader with the given message.
-	 * @param writer - the writer itself
+	 * @param manipulator - the resource manipulator being used to control this channel
+	 * @param message - the message from the writer itself
+	 * @param channel - the channel this writer came on
 	 */
-	public void writerArrived(WaitingWriter<Message> writer);
+	public void writerArrived(ResourceManipulator manipulator, Message message, Channel<Message> channel);
 }

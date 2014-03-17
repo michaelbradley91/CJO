@@ -1,9 +1,10 @@
-package com.softwire.it.cjo.utilities;
+package com.softwire.it.cjo.channels;
 
 import static org.junit.Assert.*;
 
 import org.junit.Test;
 
+import com.softwire.it.cjo.channels.ChannelFIFOQueue.Crate;
 import com.softwire.it.cjo.utilities.exceptions.EmptyFIFOQueueException;
 
 /**
@@ -23,7 +24,7 @@ public class FIFOQueueTest {
 	 */
 	@Test
 	public void testBasics() {
-		FIFOQueue<Integer> queue = new FIFOQueue<Integer>();
+		ChannelFIFOQueue<Integer> queue = new ChannelFIFOQueue<Integer>();
 		//Check start up...
 		assertTrue(queue.size()==0 && queue.isEmpty());
 		try {
@@ -36,14 +37,14 @@ public class FIFOQueueTest {
 		queue.enqueue(3); //should be [3,2,1]
 		//Now dequeue...
 		assertTrue(!queue.isEmpty() && queue.size()==3);
-		assertTrue(queue.dequeue().getObject()==1);
+		assertTrue(queue.dequeue()==1);
 		assertTrue(!queue.isEmpty() && queue.size()==2);
-		assertTrue(queue.dequeue().getObject()==2);
+		assertTrue(queue.dequeue()==2);
 		assertTrue(!queue.isEmpty() && queue.size()==1);
-		assertTrue(queue.dequeue().getObject()==3);
+		assertTrue(queue.dequeue()==3);
 		assertTrue(queue.isEmpty() && queue.size()==0);
 		//Now try using the removal...
-		FIFOQueue<Integer>.Crate crate = queue.enqueue(1);
+		Crate<Integer> crate = queue.enqueue(1);
 		assertTrue(!queue.isEmpty() && queue.size()==1);
 		queue.remove(crate);
 		//Check it is now empty...
@@ -62,17 +63,18 @@ public class FIFOQueueTest {
 		crate = queue.enqueue(1);
 		queue.enqueue(2);
 		queue.enqueue(3);
-		FIFOQueue<Integer>.Crate crate2 = queue.enqueue(4);
+		Crate<Integer> crate2 = queue.enqueue(4);
 		queue.enqueue(5);
 		queue.remove(crate);
-		assertTrue(queue.dequeue().getObject()==2);
+		assertTrue(queue.dequeue()==2);
 		queue.remove(crate2);
-		assertTrue(queue.dequeue().getObject()==3);
+		assertTrue(queue.dequeue()==3);
 		crate = queue.enqueue(6);
-		assertTrue(queue.dequeue().getObject()==5);
+		assertTrue(queue.dequeue()==5);
 		queue.remove(crate);
 		assertTrue(queue.isEmpty() && queue.size()==0);
 		//Should be working!
 	}
 
+	//TODO: test the id ordering!
 }

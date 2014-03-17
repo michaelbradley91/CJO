@@ -1,5 +1,7 @@
 package com.softwire.it.cjo.channels;
 
+import com.softwire.it.cjo.parallelresources.ResourceManipulator;
+
 /**
  * ****************<br>
  * Date: 15/03/2014<br>
@@ -18,14 +20,16 @@ public interface WaitingWriter<Message> {
 	
 	/**
 	 * This states that the channel was closed so no interaction on the channel will take place.
+	 * @param manipulator - the resource manipulator being used to control this channel
 	 */
-	public void channelClosed();
+	public void channelClosed(ResourceManipulator manipulator);
 	
 	/**
 	 * Specifies that a reader has read the written message
-	 * @param reader - the reader itself
+	 * @param manipulator - the resource manipulator being used to control this channel
+	 * @param channel - the channel itself
 	 */
-	public void readerArrived(WaitingWriter<Message> reader);
+	public void readerArrived(ResourceManipulator manipulator, Channel<Message> channel);
 	
 	/**
 	 * @return - the message written by this writer. This should be a field - nothing complicated

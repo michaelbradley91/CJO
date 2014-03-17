@@ -1,25 +1,26 @@
-package com.softwire.it.cjo.utilities;
+package com.softwire.it.cjo.channels;
 
 import com.softwire.it.cjo.utilities.exceptions.EmptyFIFOQueueException;
 
 /**
  * ****************<br>
- * Date: 16/03/2014<br>
+ * Date: 17/03/2014<br>
  * Author:  michael<br>
  * ****************<br>
  * <br>
- * This class is a FIFO queue (first in, first out), which has O(1) enqueue, dequeue, and
+ * This class is a specialised FIFO queue (first in, first out), which has O(1) enqueue, dequeue, and
  * more importantly  for this application, removal. The object is "truly" removed, so that the garbage collector
  * could take it.<br>
  * <br>
- * The queue is not thread safe and does not support keys
+ * The queue is not thread safe and does not support keys.
+ * 
  * @param <T> - the type of elements being added to the queue
  *
  */
-public final class FIFOQueue<T> {
+final class ChannelFIFOQueue<T> {
 	/**
 	 * ****************<br>
-     * Date: 16/03/2014<br>
+     * Date: 17/03/2014<br>
      * Author:  michael<br>
      * ****************<br>
      * <br>
@@ -34,11 +35,21 @@ public final class FIFOQueue<T> {
 		private Crate<T> previous,next;
 		private final T heldObj;
 		private boolean removed;
-		private Crate(Crate<T> previous, Crate<T> next, T heldObj) {
+		//Which queue this crate is a part of
+		private final ChannelFIFOQueue<T> owner;
+		/*
+		 * Note to self:
+		 * 
+		 * To avoid the big integer, we can be very clever, and detect when the id is too large. We can
+		 * then rescan the queue and re-organise the ids. However, we'd need to mak sure anyone who stored
+		 * the id knew it could change... Would rather be simple and correct about this.
+		 */
+		private Crate(Crate<T> previous, Crate<T> next, T heldObj, ChannelFIFOQueue<T> owner) {
 			this.heldObj = heldObj;
 			this.previous = previous;
 			this.next = next;
 			removed = false;
+			this.owner = owner;
 		}
 		
 		/**
@@ -62,10 +73,10 @@ public final class FIFOQueue<T> {
 	/**
 	 * Construct a new empty FIFO queue
 	 */
-	public FIFOQueue() {
-		//Initialise stuff...
-		dummyHead = new Crate<T>(null,null,null);
-		dummyTail = new Crate<T>(null,null,null);
+	public ChannelFIFOQueue() {
+		//Initialise stuff... (the head and tail don't need ids as they can't be reached from the outside)
+		dummyHead = new Crate<T>(null,null,null,this);
+		dummyTail = new Crate<T>(null,null,null,this);
 		dummyHead.previous = dummyHead;
 		dummyTail.next = dummyTail;
 		dummyHead.next = dummyTail;
@@ -78,7 +89,7 @@ public final class FIFOQueue<T> {
 	 * @return - the crate the object has been put in.
 	 */
 	public Crate<T> enqueue(T object) {
-		Crate<T> crate = new Crate<T>(dummyHead,dummyHead.next,object);
+		Crate<T> crate = new Crate<T>(dummyHead,dummyHead.next,object,this);
 		//Correct the head...
 		dummyHead.next.previous = crate;
 		dummyHead.next = crate;
@@ -104,17 +115,19 @@ public final class FIFOQueue<T> {
 	}
 	
 	/**
-	 * @param crate - the crate to remove from the FIFO queue... (if it was removed in the past, this has no effect
+	 * @param crate - the crate to remove from the FIFO queue... (if it does not exist in the queue, this has no effect)
+	 * @return true iff the crate was removed
 	 */
-	public void remove(Crate<T> crate) {
-		if (crate.removed) {
-			return;
+	public boolean remove(Crate<T> crate) {
+		if (crate.removed || crate.owner!=this) {
+			return false;
 		}
 		crate.next.previous = crate.previous;
 		crate.previous.next = crate.next;
 		crate.removed = true;
 		size--;
 		//That should be it...
+		return true;
 	}
 	
 	/**
