@@ -32,7 +32,7 @@ import com.softwire.it.cjo.utilities.FIFOQueue;
  * to ensure all channels on which they were reading and writing (AKA will modify the state of) were locked,
  * by connecting them together via dependencies in the resource graph.<br>
  * If a channel closes for some reason while you're waiting, you'll be told, and you're response will probably
- * be to throw an exception (channel closed exception), but it is up to you.
+ * be to throw an exception (channel closed exception), but it is up to you.<br>
  * <br>
  * If that all makes sense, you could try building your own!
  * 
