@@ -17,7 +17,7 @@ import com.softwire.it.cjo.utilities.exceptions.EmptyFIFOQueueException;
  * @param <T> - the type of elements being added to the queue
  *
  */
-final class ChannelFIFOQueue<T> {
+public final class ChannelFIFOQueue<T> {
 	/**
 	 * ****************<br>
      * Date: 17/03/2014<br>

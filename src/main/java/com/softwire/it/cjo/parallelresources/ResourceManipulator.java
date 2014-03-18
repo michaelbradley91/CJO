@@ -30,6 +30,11 @@ import com.softwire.it.cjo.parallelresources.exceptions.ResourceReleasedExceptio
  * TODO: assess if this is worth it, or if the synchronised tags should be removed<br>
  * <br>
  * In total, n operations in the resource manipulator has worst case running time of O(n*log(n)) I believe<br>
+ * <br>
+ * The golden rule to obey is that within one thread you an only have one resource manipulator at a time. That is,
+ * you must release your existing resources before asking for more. This is to avoid deadlock - the most obvious example where
+ * deadlock could occur is if you were to attempt to acquire the same resource twice! (Or any two resources with the same
+ * representative...). Obey this rule!!!
  * 
  */
 public class ResourceManipulator {

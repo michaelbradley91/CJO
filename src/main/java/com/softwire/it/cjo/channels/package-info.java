@@ -259,4 +259,9 @@ package com.softwire.it.cjo.channels;
  * 
  * Maybe buffered channels should just have a fixed number of pretend readers - and keep track of the writers?
  * 
+ * *****************
+ * 
+ * Change of plan - everything will be operators. Operators will update channels when they are ready to receive responses.
+ * This should make life a lot easier
+ * 
  */

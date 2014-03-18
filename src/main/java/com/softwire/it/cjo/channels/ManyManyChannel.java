@@ -2,34 +2,33 @@ package com.softwire.it.cjo.channels;
 
 import com.softwire.it.cjo.channels.ChannelFIFOQueue.Crate;
 import com.softwire.it.cjo.channels.exceptions.ChannelClosed;
-import com.softwire.it.cjo.channels.exceptions.RegistrationException;
 /**
  * ****************<br>
  * Date: 18/03/2014<br>
  * Author:  michael<br>
  * ****************<br>
  * <br>
- * A one one channel allows for one reader and one writer at a time. If any more than this are detected,
- * it will throw an exception.<br>
- * Reading and writing on a one one channel is synchronised.<br>
+ * A many many channel allows any number of readers and writers.<br>
+ * Reading and writing on a one many channel is synchronised.<br>
+ * Each message written to the channel is only read once.<br>
  * Fairness guaranteed!
  * 
  * @param <Message> - the type of message sent down this channel
  */
-public class OneOneChannel<Message> extends AbstractChannel<Message> {
+public class ManyManyChannel<Message> extends AbstractChannel<Message> {
 	//Store how much the channel has been closed
 	private boolean hasClosed;
 	
 	/**
 	 * Construct a new one one channel
 	 */
-	public OneOneChannel() {
+	public ManyManyChannel() {
 		super();
 		hasClosed = false;
 	}
 	
 	/**
-	 * For a one one channel, this throws a registration exception if there is already a writer
+	 * For a one many channel, this throws a registration exception if there is already a writer
 	 * waiting on the channel
 	 */
 	@Override
@@ -37,42 +36,28 @@ public class OneOneChannel<Message> extends AbstractChannel<Message> {
 		if (hasClosed) {
 			throw new ChannelClosed();
 		}
-		if (super.hasWriter()) {
-			throw new RegistrationException("A one one channel cannot have more than one waiting writer at once");
-		}
 		return super.registerWriter(writer);
 	}
 	
-	/**
-	 * For a one one channel, this throws a registration exception if there is already a reader
-	 * waiting on the channel
-	 */
 	@Override
 	protected Crate<WaitingReader<Message>> registerReader(WaitingReader<Message> reader) {
 		if (hasClosed) {
 			throw new ChannelClosed();
 		}
-		if (super.hasReader()) {
-			throw new RegistrationException("A one one channel cannot have more than one waiting reader at once");
-		}
 		return super.registerReader(reader);
 	}
 
 	/**
-	 * Completely closes a one one channel
+	 * Has no effect on a many many channel
 	 */
 	@Override
-	protected void closeWriteEnd() {
-		close();
-	}
+	protected void closeWriteEnd() {}
 
 	/**
-	 * Completely closes a one one channel
+	 * Has no effect on a many many channel
 	 */
 	@Override
-	protected void closeReadEnd() {
-		close();
-	}
+	protected void closeReadEnd() {}
 
 	@Override
 	protected void close() {
@@ -82,21 +67,24 @@ public class OneOneChannel<Message> extends AbstractChannel<Message> {
 	@Override
 	protected void update() {
 		//Now see what we should do with readers or writers...
-		if (super.hasReader() && super.hasWriter()) {
+		while (super.hasReader() && super.hasWriter()) {
 			//Communicate!
 			WaitingReader<Message> reader = super.getNextReader();
 			WaitingWriter<Message> writer = super.getNextWriter();
 			//Now awake them
 			reader.writerArrived(writer.getMessage(), this);
 			writer.readerArrived(this);
+			//There will be no more writers
 		}
-		if (hasClosed && super.hasReader()) {
-			//Get the reader out
-			super.getNextReader().channelClosed();
-		}
-		if (hasClosed && super.hasWriter()) {
-			//Get the writer out
-			super.getNextWriter().channelClosed();
+		if (hasClosed) {
+			//Get the readers out
+			while (super.hasReader()) {
+				super.getNextReader().channelClosed();
+			}
+			//Get the readers out
+			while (super.hasWriter()) {
+				super.getNextWriter().channelClosed();
+			}
 		}
 	}
 }
