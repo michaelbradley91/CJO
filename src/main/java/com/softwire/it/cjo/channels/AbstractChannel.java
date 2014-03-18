@@ -92,4 +92,31 @@ public abstract class AbstractChannel<Message> extends Channel<Message> {
 	protected boolean hasWriter() {
 		return writers.size()==0;
 	}
+	
+	/**
+	 * Tell all waiting readers and writers that they are to leave because the channel
+	 * has closed. This empties the readers and writers queue
+	 */
+	protected void clearOutWaitingReadersAndWriters() {
+		while (hasReader()) {
+			getNextReader().channelClosed();
+		}
+		while (hasWriter()) {
+			getNextWriter().channelClosed();
+		}
+	}
+	
+	/**
+	 * Automatically pairs of readers and writers from the queues until one list becomes empty
+	 */
+	protected void completeWriterReaderInteractions() {
+		while (hasReader() && hasWriter()) {
+			//Communicate!
+			WaitingReader<Message> reader = getNextReader();
+			WaitingWriter<Message> writer = getNextWriter();
+			//Now awake them
+			reader.writerArrived(writer.getMessage(), this);
+			writer.readerArrived(this);
+		}
+	}
 }

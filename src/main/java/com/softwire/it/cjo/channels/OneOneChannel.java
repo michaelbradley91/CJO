@@ -82,21 +82,9 @@ public class OneOneChannel<Message> extends AbstractChannel<Message> {
 	@Override
 	protected void update() {
 		//Now see what we should do with readers or writers...
-		if (super.hasReader() && super.hasWriter()) {
-			//Communicate!
-			WaitingReader<Message> reader = super.getNextReader();
-			WaitingWriter<Message> writer = super.getNextWriter();
-			//Now awake them
-			reader.writerArrived(writer.getMessage(), this);
-			writer.readerArrived(this);
-		}
-		if (hasClosed && super.hasReader()) {
-			//Get the reader out
-			super.getNextReader().channelClosed();
-		}
-		if (hasClosed && super.hasWriter()) {
-			//Get the writer out
-			super.getNextWriter().channelClosed();
+		super.completeWriterReaderInteractions();
+		if (hasClosed) {
+			super.clearOutWaitingReadersAndWriters();
 		}
 	}
 }

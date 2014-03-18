@@ -22,7 +22,7 @@ public class OneManyChannel<Message> extends AbstractChannel<Message> {
 	private boolean hasClosed;
 	
 	/**
-	 * Construct a new one one channel
+	 * Construct a new one many channel
 	 */
 	public OneManyChannel() {
 		super();
@@ -39,7 +39,7 @@ public class OneManyChannel<Message> extends AbstractChannel<Message> {
 			throw new ChannelClosed();
 		}
 		if (super.hasWriter()) {
-			throw new RegistrationException("A one one channel cannot have more than one waiting writer at once");
+			throw new RegistrationException("A one many channel cannot have more than one waiting writer at once");
 		}
 		return super.registerWriter(writer);
 	}
@@ -74,24 +74,9 @@ public class OneManyChannel<Message> extends AbstractChannel<Message> {
 	@Override
 	protected void update() {
 		//Now see what we should do with readers or writers...
-		if (super.hasReader() && super.hasWriter()) {
-			//Communicate!
-			WaitingReader<Message> reader = super.getNextReader();
-			WaitingWriter<Message> writer = super.getNextWriter();
-			//Now awake them
-			reader.writerArrived(writer.getMessage(), this);
-			writer.readerArrived(this);
-			//There will be no more writers
-		}
-		if (hasClosed && super.hasReader()) {
-			//Get the readers out
-			while (super.hasReader()) {
-				super.getNextReader().channelClosed();
-			}
-		}
-		if (hasClosed && super.hasWriter()) {
-			//Get the writer out (only one)
-			super.getNextWriter().channelClosed();
+		super.completeWriterReaderInteractions();
+		if (hasClosed) {
+			super.clearOutWaitingReadersAndWriters();
 		}
 	}
 }

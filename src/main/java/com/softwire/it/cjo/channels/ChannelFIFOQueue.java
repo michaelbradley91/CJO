@@ -131,6 +131,14 @@ public final class ChannelFIFOQueue<T> {
 	}
 	
 	/**
+	 * @param crate - a crate to check for
+	 * @return - true iff the queue currently has this crate
+	 */
+	public boolean contains(Crate<T> crate) {
+		return crate.owner==this && !crate.removed;
+	}
+	
+	/**
 	 * @return - the number of crates in this FIFO queue
 	 */
 	public int size() {

@@ -21,7 +21,7 @@ public class ManyOneChannel<Message> extends AbstractChannel<Message> {
 	private boolean hasClosed;
 	
 	/**
-	 * Construct a new one one channel
+	 * Construct a new many one channel
 	 */
 	public ManyOneChannel() {
 		super();
@@ -73,24 +73,9 @@ public class ManyOneChannel<Message> extends AbstractChannel<Message> {
 	@Override
 	protected void update() {
 		//Now see what we should do with readers or writers...
-		if (super.hasReader() && super.hasWriter()) {
-			//Communicate!
-			WaitingReader<Message> reader = super.getNextReader();
-			WaitingWriter<Message> writer = super.getNextWriter();
-			//Now awake them
-			reader.writerArrived(writer.getMessage(), this);
-			writer.readerArrived(this);
-			//There shouldn't be any further readers - so no more interactions
-		}
-		if (hasClosed && super.hasReader()) {
-			//Get the reader out
-			super.getNextReader().channelClosed();
-		}
-		if (hasClosed && super.hasWriter()) {
-			//Get the writers out
-			while (super.hasWriter()) {
-				super.getNextWriter().channelClosed();
-			}
+		super.completeWriterReaderInteractions();
+		if (hasClosed) {
+			super.clearOutWaitingReadersAndWriters();
 		}
 	}
 }
