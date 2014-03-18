@@ -146,14 +146,14 @@ public abstract class Channel<Message> {
 	 * @return - the number of processes waiting to read on this channel (according to these internal methods - assumes
 	 * they are actually used!)
 	 */
-	protected final int getNumberOfReaders() {
+	protected int getNumberOfReaders() {
 		return readers.size();
 	}
 	
 	/**
 	 * @return - true iff there is at least one waiting reader held by the channel
 	 */
-	protected final boolean hasReader() {
+	protected boolean hasReader() {
 		return readers.size()==0;
 	}
 	
