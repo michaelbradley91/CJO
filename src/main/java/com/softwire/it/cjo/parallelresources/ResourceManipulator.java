@@ -37,7 +37,7 @@ import com.softwire.it.cjo.parallelresources.exceptions.ResourceReleasedExceptio
  * representative...). Obey this rule!!!
  * 
  */
-public class ResourceManipulator {
+public final class ResourceManipulator {
 	//Remember all of the representatives that we have locked
 	final Collection<Representative> representatives; //visibile agan for speed (wouldn't normally prefer this...)
 	//Remember the resource graph you are a part of...

@@ -14,6 +14,10 @@ import com.softwire.it.cjo.operators.exceptions.ProcessInterruptedException;
  *
  */
 public class Ops {
+	/**
+	 * Hide the constructor
+	 */
+	private Ops() {};
 	
 	/**
 	 * Read a message from a channel. Note that illegal state exceptions may be thrown if the underlying channel is improperly

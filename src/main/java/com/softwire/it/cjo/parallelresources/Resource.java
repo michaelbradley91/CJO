@@ -17,7 +17,7 @@ import java.util.HashSet;
  * Equality is reference equality, so each one created is unique.<br>
  *
  */
-public class Resource {
+public final class Resource {
 	//Remember the representative for this resource
 	private Representative representative;
 	//The mark for this resource

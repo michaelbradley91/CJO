@@ -26,7 +26,7 @@ import java.util.concurrent.Semaphore;
  * (For CJO, channels are largely persistent)
  *
  */
-public class ResourceGraph {
+public final class ResourceGraph {
 	
 	/**
 	 * The resource graph instance. There should only ever be one in use for an application
