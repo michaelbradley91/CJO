@@ -1,4 +1,4 @@
-package com.softwire.it.cjo.channels.exceptions;
+package com.softwire.it.cjo.operators.exceptions;
 
 /**
  * ****************<br>

@@ -1,5 +1,7 @@
 package com.softwire.it.cjo.channels.exceptions;
 
+import com.softwire.it.cjo.operators.Channel;
+
 /**
  * ****************<br>
  * Date: 17/03/2014<br>
@@ -12,4 +14,20 @@ package com.softwire.it.cjo.channels.exceptions;
  */
 public class ChannelClosed extends RuntimeException {
 	private static final long serialVersionUID = -7232668694512018534L;
+	private final Channel<?> channel;
+	/**
+	 * Construct a new channel closed exception
+	 * @param channel - the channel that became closed
+	 */
+	public ChannelClosed(Channel<?> channel) {
+		super();
+		this.channel = channel;
+	}
+	
+	/**
+	 * @return - the channel which was closed
+	 */
+	public Channel<?> getChannel() {
+		return channel;
+	}
 }

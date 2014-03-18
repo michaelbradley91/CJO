@@ -35,7 +35,7 @@ public class OneOneChannel<Message> extends AbstractChannel<Message> {
 	@Override
 	protected Crate<WaitingWriter<Message>> registerWriter(WaitingWriter<Message> writer) {
 		if (hasClosed) {
-			throw new ChannelClosed();
+			throw new ChannelClosed(this);
 		}
 		if (super.hasWriter()) {
 			throw new RegistrationException("A one one channel cannot have more than one waiting writer at once");
@@ -50,7 +50,7 @@ public class OneOneChannel<Message> extends AbstractChannel<Message> {
 	@Override
 	protected Crate<WaitingReader<Message>> registerReader(WaitingReader<Message> reader) {
 		if (hasClosed) {
-			throw new ChannelClosed();
+			throw new ChannelClosed(this);
 		}
 		if (super.hasReader()) {
 			throw new RegistrationException("A one one channel cannot have more than one waiting reader at once");

@@ -36,7 +36,7 @@ public class ManyManyChannel<Message> extends AbstractChannel<Message> {
 	@Override
 	protected Crate<WaitingWriter<Message>> registerWriter(WaitingWriter<Message> writer) {
 		if (hasClosed) {
-			throw new ChannelClosed();
+			throw new ChannelClosed(this);
 		}
 		return super.registerWriter(writer);
 	}
@@ -44,7 +44,7 @@ public class ManyManyChannel<Message> extends AbstractChannel<Message> {
 	@Override
 	protected Crate<WaitingReader<Message>> registerReader(WaitingReader<Message> reader) {
 		if (hasClosed) {
-			throw new ChannelClosed();
+			throw new ChannelClosed(this);
 		}
 		return super.registerReader(reader);
 	}

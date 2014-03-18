@@ -5,6 +5,7 @@ import com.softwire.it.cjo.channels.WaitingWriter;
 import com.softwire.it.cjo.channels.ChannelFIFOQueue.Crate;
 import com.softwire.it.cjo.parallelresources.Resource;
 import com.softwire.it.cjo.parallelresources.ResourceGraph;
+import com.softwire.it.cjo.parallelresources.ResourceManipulator;
 
 /**
  * ****************<br>
@@ -33,7 +34,9 @@ public abstract class Channel<Message> {
 	 * Construct a new channel with no readers or writers waiting
 	 */
 	public Channel() {
-		resource = ResourceGraph.INSTANCE.getManipulator().addResource();
+		ResourceManipulator manipulator = ResourceGraph.INSTANCE.getManipulator();
+		resource = manipulator.addResource();
+		manipulator.releaseResources();
 		reader = new ChannelReader<Message>(this);
 		writer = new ChannelWriter<Message>(this);
 	}

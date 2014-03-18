@@ -34,7 +34,7 @@ public class AsyncManyChannel<Message> extends AbstractChannel<Message> {
 	@Override
 	protected Crate<WaitingWriter<Message>> registerWriter(WaitingWriter<Message> writer) {
 		if (hasClosed) {
-			throw new ChannelClosed();
+			throw new ChannelClosed(this);
 		}
 		//Remember to release this writer.
 		return waitingWriters.enqueue(writer);
@@ -50,7 +50,7 @@ public class AsyncManyChannel<Message> extends AbstractChannel<Message> {
 	@Override
 	protected Crate<WaitingReader<Message>> registerReader(WaitingReader<Message> reader) {
 		if (hasClosed) {
-			throw new ChannelClosed();
+			throw new ChannelClosed(this);
 		}
 		return super.registerReader(reader);
 	}

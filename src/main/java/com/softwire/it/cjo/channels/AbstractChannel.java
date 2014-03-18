@@ -58,7 +58,7 @@ public abstract class AbstractChannel<Message> extends Channel<Message> {
 	 * @return - true iff there is at least one waiting reader held by the channel
 	 */
 	protected boolean hasReader() {
-		return readers.size()==0;
+		return readers.size()!=0;
 	}
 	
 	@Override
@@ -90,7 +90,7 @@ public abstract class AbstractChannel<Message> extends Channel<Message> {
 	 * @return - true iff there is at least one waiting reader held by the channel
 	 */
 	protected boolean hasWriter() {
-		return writers.size()==0;
+		return writers.size()!=0;
 	}
 	
 	/**
