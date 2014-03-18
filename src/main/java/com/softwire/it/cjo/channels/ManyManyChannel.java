@@ -13,6 +13,8 @@ import com.softwire.it.cjo.channels.exceptions.ChannelClosed;
  * Each message written to the channel is only read once.<br>
  * Fairness guaranteed!
  * 
+ * TODO: remove code duplication
+ * 
  * @param <Message> - the type of message sent down this channel
  */
 public class ManyManyChannel<Message> extends AbstractChannel<Message> {

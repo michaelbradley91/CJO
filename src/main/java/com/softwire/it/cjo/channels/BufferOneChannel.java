@@ -17,6 +17,8 @@ import com.softwire.it.cjo.channels.exceptions.RegistrationException;
  * to be stored, unless there are an infinite number of processes.<br>
  * Fairness guaranteed!
  * 
+ * TODO: remove code duplication
+ * 
  * @param <Message> - the type of message sent down this channel
  */
 public class BufferOneChannel<Message> extends AbstractChannel<Message> {
