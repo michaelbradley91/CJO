@@ -9,7 +9,6 @@ import org.apache.log4j.Logger;
 import org.junit.Test;
 
 import com.softwire.it.cjo.channels.exceptions.ChannelClosed;
-import com.softwire.it.cjo.channels.exceptions.RegistrationException;
 import com.softwire.it.cjo.operators.Channel;
 import com.softwire.it.cjo.operators.exceptions.ProcessInterruptedException;
 import com.softwire.it.cjo.utilities.Box;
@@ -75,6 +74,49 @@ public class AsyncManyChannelTest {
 		//Check that these are what we expected
 		assertTrue(first==17 || second==17);
 		assertTrue(first==6 || second==6);
+		
+		//Now test for a couple of readers being added at once...
+		final Box<Long> time2 = new Box<Long>(0L);
+		final Box<Integer> message2 = new Box<Integer>(0);
+		final Box<Semaphore> waitSem2 = new Box<Semaphore>(new Semaphore(0));
+		startTime = System.currentTimeMillis();
+		t = new Thread(new Runnable() {public void run() {
+			//Start reading...
+			message.setItem(read(channel));
+			//Set the time
+			time.setItem(System.currentTimeMillis());
+			//Release...
+			waitSem.getItem().release();
+		}});
+		Thread t2 = new Thread(new Runnable() {public void run() {
+			//Start reading...
+			message2.setItem(read(channel));
+			//Set the time
+			time2.setItem(System.currentTimeMillis());
+			//Release...
+			waitSem2.getItem().release();
+		}});
+		t.start();
+		t2.start();
+		//Now wait for a while
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			//Problem
+			logger.warn("testSync: interrupted while waiting");
+		}
+		//Get the messages...
+		//Read...
+		write(channel,5);
+		write(channel,4);
+		//Lock on
+		waitSem.getItem().acquireUninterruptibly();
+		waitSem2.getItem().acquireUninterruptibly();
+		//Check it was made to wait
+		assertTrue(time.getItem()-startTime>1000);
+		assertTrue(time2.getItem()-startTime>1000);
+		assertTrue(message.getItem()==5 || message2.getItem()==5);
+		assertTrue(message.getItem()==4 || message2.getItem()==4);
 		logger.trace("testAsync: complete");
 	}
 	
@@ -111,7 +153,7 @@ public class AsyncManyChannelTest {
 		t.interrupt();
 		//Now check it got the exception
 		waitSem.getItem().acquireUninterruptibly();
-		final Semaphore waitSem2 = new Semaphore(0);
+		final Box<Semaphore> waitSem2 = new Box<Semaphore>(new Semaphore(0));
 		assertTrue(gotException.getItem());
 		//Check that writers cannot be interrupted...
 		t = new Thread(new Runnable() {public void run() {
@@ -119,7 +161,7 @@ public class AsyncManyChannelTest {
 			try {
 				waitSem.getItem().acquireUninterruptibly();
 				write(channel,0);
-				waitSem2.release();
+				waitSem2.getItem().release();
 			} catch (ProcessInterruptedException e) {
 				//Check that the thread is still interrupted
 				fail("Asynchronous writer was interrupted!");
@@ -130,23 +172,79 @@ public class AsyncManyChannelTest {
 		//Now wake it up
 		waitSem.getItem().release();
 		//Now wait myself...
-		waitSem2.acquireUninterruptibly();
+		waitSem2.getItem().acquireUninterruptibly();
+		//Read the message to get rid of it
+		read(channel);
+		
+		//Now test that multiple readers can all be interrupted correctly...
+		gotException.setItem(false);
+		waitSem2.setItem(new Semaphore(0));
+		final Box<Boolean> gotException2 = new Box<Boolean>(false);
+		Thread t2 = new Thread(new Runnable() {public void run() {
+			//Start reading...
+			try {
+				read(channel);
+				fail("testInterruptions: managed to read nothing from a channel");
+			} catch (ProcessInterruptedException e) {
+				//Check that the thread is still interrupted
+				assertTrue(Thread.currentThread().isInterrupted());
+				gotException2.setItem(true);
+				waitSem2.getItem().release();
+			}
+		}});
+		t = new Thread(new Runnable() {public void run() {
+			//Start reading...
+			try {
+				read(channel);
+				fail("testInterruptions: managed to read nothing from a channel");
+			} catch (ProcessInterruptedException e) {
+				//Check that the thread is still interrupted
+				assertTrue(Thread.currentThread().isInterrupted());
+				gotException.setItem(true);
+				waitSem.getItem().release();
+			}
+		}});
+		t.start();
+		t2.start();
+		//Wait a while
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			logger.warn("testInterruptions: interrupted while waiting");
+		}
+		//Now interrupt the thread...
+		t.interrupt();
+		//Now check it got the exception
+		waitSem.getItem().acquireUninterruptibly();
+		//Check the other hasn't been interrupted yet
+		assertTrue(gotException.getItem());
+		assertTrue(!gotException2.getItem());
+		t2.interrupt();
+		//Wait...
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			logger.warn("testInterruptions: interrupted while waiting");
+		}
+		waitSem2.getItem().acquireUninterruptibly();
+		assertTrue(gotException2.getItem());
 		//Done!
 		logger.trace("testInterruptions: complete");
 	}
+	
 	/**
 	 * Test the channel closed exception is thrown at the right times
 	 */
 	@Test
 	public void testChannelClosed() {
-		//This is quite painful - async one channels should be closed by closein, or close.
+		//This is quite painful - async one channels should be closed by close.
 		//We will check each one in turn...
 		final Box<Channel<Integer>> channel = new Box<Channel<Integer>>(new AsyncManyChannel<Integer>());
 		final Box<Boolean> gotException = new Box<Boolean>(false);
 		final Box<Semaphore> waitSem = new Box<Semaphore>(new Semaphore(0));
 		//Check that we can interrupt threads correctly...
 		Thread t;
-		for (int i=0;i<2;i++) {
+		for (int i=0;i<1;i++) {
 			//i=0, closein, i=1, closeout, i=2, close
 			channel.setItem(new AsyncManyChannel<Integer>());
 			gotException.setItem(false);
@@ -170,8 +268,6 @@ public class AsyncManyChannelTest {
 			}
 			//Now close it!
 			if (i==0) {
-				closeReadEnd(channel.getItem());
-			} else {
 				close(channel.getItem());
 			}
 			//Wait for the exception
@@ -206,68 +302,50 @@ public class AsyncManyChannelTest {
 		waitSem.getItem().acquireUninterruptibly();
 		//Check the item is as expected
 		assertTrue(message.getItem()==-2);
+		
+		channel.setItem(new AsyncManyChannel<Integer>());
+		closeReadEnd(channel.getItem());
+		message.setItem(0);
+		t = new Thread(new Runnable() {public void run() {
+			//Just try to read from the channel
+			message.setItem(read(channel.getItem()));
+			//Good!
+			waitSem.getItem().release();
+		}});
+		t.start();
+		//Now write to it...
+		write(channel.getItem(),-2);
+		waitSem.getItem().acquireUninterruptibly();
+		//Check the item is as expected
+		assertTrue(message.getItem()==-2);
 		logger.trace("testChannelClosed: complete");
 	}
 	
-	/**
-	 * Test that only one reader can use the channel at once...
-	 */
-	@Test
-	public void testAsyncMany() {
-		final Channel<Integer> channel = new AsyncManyChannel<Integer>();
-		final Box<Boolean> gotException = new Box<Boolean>(false);
-		final Box<Semaphore> waitSem1 = new Box<Semaphore>(new Semaphore(0));
-		final Box<Semaphore> waitSem2 = new Box<Semaphore>(new Semaphore(0));
-		final Box<Integer> message = new Box<Integer>(0);
-		final Box<Integer> sendMessage = new Box<Integer>(901);
-		//Try adding multiple readers...
-		Thread t = new Thread(new Runnable() {public void run() {
-			//Try reading...
-			try {
-				message.setItem(read(channel));
-				waitSem1.getItem().release();
-				waitSem2.getItem().acquireUninterruptibly();
-			} catch (RegistrationException e) {
-				//Got it
-				gotException.setItem(true);
-				//Write!
-				write(channel,sendMessage.getItem());
-				waitSem2.getItem().release();
-				waitSem1.getItem().acquireUninterruptibly();
-			}
-		}});
-		//Start the thread
-		t.start();
-		//Try reading myself
-		try {
-			message.setItem(read(channel));
-			waitSem1.getItem().release();
-			waitSem2.getItem().acquireUninterruptibly();
-		} catch (RegistrationException e) {
-			//Got it
-			gotException.setItem(true);
-			//Write!
-			write(channel,sendMessage.getItem());
-			waitSem2.getItem().release();
-			waitSem1.getItem().acquireUninterruptibly();
-		}
-		//Now we should both be out. Check we got the message, and the exception
-		assertTrue(gotException.getItem());
-		assertTrue(message.getItem().equals(sendMessage.getItem()));
-		logger.trace("testAsyncMany: complete");
-	}
 	//The number of writers to include...
+	private static final int NO_READERS = 10;
 	private static final int NO_WRITERS = 10;
-	
 	/**
-	 * Test that many writing threads and a reading thread can interact properly with each other.
+	 * Test that many writing threads and many reading threads can interact properly with each other.
 	 */
 	@Test
 	public void testStress() {
 		final Channel<Integer> channel = new AsyncManyChannel<Integer>();
-		Thread[] threads = new Thread[NO_WRITERS];
+		Thread[] readers = new Thread[NO_READERS];
+		for (int i=0; i<NO_READERS; i++) {
+			readers[i] = new Thread(new Runnable() {public void run() {
+				while(true) {
+					try {
+						read(channel);
+					} catch (ChannelClosed c) {
+						break;
+					} //finish
+				}
+			}});
+			readers[i].start();
+		}
+		Thread[] writers = new Thread[NO_WRITERS];
 		for (int i=0; i<NO_WRITERS; i++) {
-			threads[i] = new Thread(new Runnable() {public void run() {
+			writers[i] = new Thread(new Runnable() {public void run() {
 				while(true) {
 					try {
 						write(channel,8);
@@ -276,19 +354,8 @@ public class AsyncManyChannelTest {
 					} //finish
 				}
 			}});
-			threads[i].start();
+			writers[i].start();
 		}
-		//Get a reader going
-		Thread t = new Thread(new Runnable() {public void run() {
-			while(true) {
-				try {
-					read(channel);
-				} catch (ChannelClosed c) {
-					break;
-				} //finish
-			}
-		}});
-		t.start();
 		//Wait for a bit...
 		try {
 			Thread.sleep(2000);
