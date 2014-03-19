@@ -354,7 +354,7 @@ public class ManyManyChannelTest {
 	 */
 	@Test
 	public void testChannelClosed() {
-		//This is quite painful - one many channels should be closed when the write end is closed, or when the whole channel
+		//This is quite painful - many many channels should be closed when the write end is closed, or when the whole channel
 		//is closed. Otherwise, there should be no effect
 		final Box<Channel<Integer>> channel = new Box<Channel<Integer>>(new ManyManyChannel<Integer>());
 		final Box<Boolean> gotException = new Box<Boolean>(false);
