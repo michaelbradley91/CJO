@@ -75,6 +75,4 @@ public class FIFOQueueTest {
 		assertTrue(queue.isEmpty() && queue.size()==0);
 		//Should be working!
 	}
-
-	//TODO: test the id ordering!
 }
