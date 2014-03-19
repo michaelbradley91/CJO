@@ -5,7 +5,6 @@ import java.util.concurrent.Semaphore;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
-import com.softwire.it.cjo.channels.OneOneChannel;
 import com.softwire.it.cjo.channels.exceptions.ChannelClosed;
 import com.softwire.it.cjo.channels.exceptions.RegistrationException;
 import com.softwire.it.cjo.operators.Channel;
@@ -17,23 +16,24 @@ import static org.junit.Assert.*;
 
 /**
  * ****************<br>
- * Date: 18/03/2014<br>
+ * Date: 19/03/2014<br>
  * Author:  michael<br>
  * ****************<br>
  * <br>
- * This class tests the correctness of the OneOneChannel
+ * This class tests the correctness of the ManyOneChannel
+ * (many writers - one reader)
  *
  */
-public class OneOneChannelTest {
+public class ManyOneChannelTest {
 	//The logger for these tests
-	private final Logger logger = Logger.getLogger(OneOneChannelTest.class);
+	private final Logger logger = Logger.getLogger(ManyOneChannelTest.class);
 
 	/**
 	 * Test that readers and writers are forced to wait for each other on the channel
 	 */
 	@Test
 	public void testSync() {
-		final Channel<Integer> channel = new OneOneChannel<Integer>();
+		final Channel<Integer> channel = new ManyOneChannel<Integer>();
 		//Firstly, check that the reader must wait:
 		final Box<Semaphore> waitSem = new Box<Semaphore>(new Semaphore(0));
 		final Box<Long> time = new Box<Long>(0L);
@@ -89,6 +89,49 @@ public class OneOneChannelTest {
 		//Check it was made to wait
 		assertTrue(time.getItem()-startTime>1000);
 		assertTrue(message.getItem()==5);
+		
+		//Now test for a couple of writers being added at once...
+		final Box<Long> time2 = new Box<Long>(0L);
+		final Box<Integer> message2 = new Box<Integer>(0);
+		final Box<Semaphore> waitSem2 = new Box<Semaphore>(new Semaphore(0));
+		startTime = System.currentTimeMillis();
+		t = new Thread(new Runnable() {public void run() {
+			//Start reading...
+			write(channel,10);
+			//Set the time
+			time.setItem(System.currentTimeMillis());
+			//Release...
+			waitSem.getItem().release();
+		}});
+		Thread t2 = new Thread(new Runnable() {public void run() {
+			//Start reading...
+			write(channel,6);
+			//Set the time
+			time2.setItem(System.currentTimeMillis());
+			//Release...
+			waitSem2.getItem().release();
+		}});
+		t.start();
+		t2.start();
+		//Now wait for a while
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			//Problem
+			logger.warn("testSync: interrupted while waiting");
+		}
+		//Get the messages...
+		//Read...
+		message.setItem(read(channel));
+		message2.setItem(read(channel));
+		//Lock on
+		waitSem.getItem().acquireUninterruptibly();
+		waitSem2.getItem().acquireUninterruptibly();
+		//Check it was made to wait
+		assertTrue(time.getItem()-startTime>1000);
+		assertTrue(time2.getItem()-startTime>1000);
+		assertTrue(message.getItem()==6 || message2.getItem()==6);
+		assertTrue(message.getItem()==10 || message2.getItem()==10);
 		//Good!
 		logger.trace("testSync: complete");
 	}
@@ -100,7 +143,7 @@ public class OneOneChannelTest {
 	 */
 	@Test
 	public void testInterruptions() {
-		final Channel<Integer> channel = new OneOneChannel<Integer>();
+		final Channel<Integer> channel = new ManyOneChannel<Integer>();
 		final Box<Boolean> gotException = new Box<Boolean>(false);
 		final Box<Semaphore> waitSem = new Box<Semaphore>(new Semaphore(0));
 		//Check that we can interrupt threads correctly...
@@ -154,6 +197,60 @@ public class OneOneChannelTest {
 		//Now check it got the exception
 		waitSem.getItem().acquireUninterruptibly();
 		assertTrue(gotException.getItem());
+		
+		//Now test that multiple writers can all be interrupted correctly...
+		gotException.setItem(false);
+		final Box<Semaphore> waitSem2 = new Box<Semaphore>(new Semaphore(0));
+		final Box<Boolean> gotException2 = new Box<Boolean>(false);
+		Thread t2 = new Thread(new Runnable() {public void run() {
+			//Start reading...
+			try {
+				write(channel,0);
+				fail("testInterruptions: managed to write to no reader in a channel");
+			} catch (ProcessInterruptedException e) {
+				//Check that the thread is still interrupted
+				assertTrue(Thread.currentThread().isInterrupted());
+				gotException2.setItem(true);
+				waitSem2.getItem().release();
+			}
+		}});
+		t = new Thread(new Runnable() {public void run() {
+			//Start reading...
+			try {
+				write(channel,-12);
+				fail("testInterruptions: managed to write to no reader in a channel");
+			} catch (ProcessInterruptedException e) {
+				//Check that the thread is still interrupted
+				assertTrue(Thread.currentThread().isInterrupted());
+				gotException.setItem(true);
+				waitSem.getItem().release();
+			}
+		}});
+		t.start();
+		t2.start();
+		//Wait a while
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			logger.warn("testInterruptions: interrupted while waiting");
+		}
+		//Now interrupt the thread...
+		t.interrupt();
+		//Now check it got the exception
+		waitSem.getItem().acquireUninterruptibly();
+		//Check the other hasn't been interrupted yet
+		assertTrue(gotException.getItem());
+		assertTrue(!gotException2.getItem());
+		t2.interrupt();
+		//Wait...
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			logger.warn("testInterruptions: interrupted while waiting");
+		}
+		waitSem2.getItem().acquireUninterruptibly();
+		assertTrue(gotException2.getItem());
+		//Good!
 		logger.trace("testInterruptions: complete");
 	}
 	
@@ -162,16 +259,15 @@ public class OneOneChannelTest {
 	 */
 	@Test
 	public void testChannelClosed() {
-		//This is quite painful - one one channels should be closed by closein, closeout, or close.
-		//We will check each one in turn...
-		final Box<Channel<Integer>> channel = new Box<Channel<Integer>>(new OneOneChannel<Integer>());
+		//This is quite painful - many one channels should be closed when the read end is closed, or when the whole channel
+		//is closed. Otherwise, there should be no effect
+		final Box<Channel<Integer>> channel = new Box<Channel<Integer>>(new ManyOneChannel<Integer>());
 		final Box<Boolean> gotException = new Box<Boolean>(false);
 		final Box<Semaphore> waitSem = new Box<Semaphore>(new Semaphore(0));
 		//Check that we can interrupt threads correctly...
 		Thread t;
-		for (int i=0;i<3;i++) {
-			//i=0, closein, i=1, closeout, i=2, close
-			channel.setItem(new OneOneChannel<Integer>());
+		for (int i=0;i<2;i++) {
+			channel.setItem(new ManyOneChannel<Integer>());
 			gotException.setItem(false);
 			//Firstly, try adding a reader, and catch the exception...
 			t = new Thread(new Runnable() {public void run() {
@@ -194,8 +290,6 @@ public class OneOneChannelTest {
 			//Now close it!
 			if (i==0) {
 				closeReadEnd(channel.getItem());
-			} else if (i==1) {
-				closeWriteEnd(channel.getItem());
 			} else {
 				close(channel.getItem());
 			}
@@ -209,7 +303,7 @@ public class OneOneChannelTest {
 				fail("testChannelClosed: managed to read from a closed channel");
 			} catch (ChannelClosed c) {	}
 			//Repeat for writing...
-			channel.setItem(new OneOneChannel<Integer>());
+			channel.setItem(new ManyOneChannel<Integer>());
 			gotException.setItem(false);
 			t = new Thread(new Runnable() {public void run() {
 				try {
@@ -231,8 +325,6 @@ public class OneOneChannelTest {
 			//Now close it!
 			if (i==0) {
 				closeReadEnd(channel.getItem());
-			} else if (i==1) {
-				closeWriteEnd(channel.getItem());
 			} else {
 				close(channel.getItem());
 			}
@@ -247,15 +339,33 @@ public class OneOneChannelTest {
 			} catch (ChannelClosed c) {	}
 			//Done!
 		}
+		waitSem.setItem(new Semaphore(0));
+		//Now check that the other closing possibilities have no effect...
+		channel.setItem(new ManyOneChannel<Integer>());
+		closeWriteEnd(channel.getItem());
+		final Box<Integer> message = new Box<Integer>(0);
+		t = new Thread(new Runnable() {public void run() {
+			//Just try to read from the channel
+			message.setItem(read(channel.getItem()));
+			//Good!
+			waitSem.getItem().release();
+		}});
+		t.start();
+		//Now write to it...
+		write(channel.getItem(),-2);
+		waitSem.getItem().acquireUninterruptibly();
+		//Check the item is as expected
+		assertTrue(message.getItem()==-2);
 		logger.trace("testChannelClosed: complete");
 	}
 	
 	/**
-	 * Test that only one reader and one writer can use the channel at once...
+	 * Test that only one reader can use the channel at once...
+	 * (multiple writers has been tested previously)
 	 */
 	@Test
-	public void testOneOne() {
-		final Channel<Integer> channel = new OneOneChannel<Integer>();
+	public void testManyOne() {
+		final Channel<Integer> channel = new ManyOneChannel<Integer>();
 		final Box<Boolean> gotException = new Box<Boolean>(false);
 		final Box<Semaphore> waitSem1 = new Box<Semaphore>(new Semaphore(0));
 		final Box<Semaphore> waitSem2 = new Box<Semaphore>(new Semaphore(0));
@@ -295,77 +405,42 @@ public class OneOneChannelTest {
 		//Now we should both be out. Check we got the message, and the exception
 		assertTrue(gotException.getItem());
 		assertTrue(message.getItem().equals(sendMessage.getItem()));
-		
-		//Now repeat for writers...
-		sendMessage.setItem(78);
-		message.setItem(0);
-		gotException.setItem(false);
-		t = new Thread(new Runnable() {public void run() {
-			//Try writing...
-			try {
-				write(channel,sendMessage.getItem());
-				waitSem1.getItem().release();
-				waitSem2.getItem().acquireUninterruptibly();
-			} catch (RegistrationException e) {
-				//Got it
-				gotException.setItem(true);
-				//Write!
-				message.setItem(read(channel));
-				waitSem2.getItem().release();
-				waitSem1.getItem().acquireUninterruptibly();
-			}
-		}});
-		//Start the thread
-		t.start();
-		//Try writing myself
-		try {
-			write(channel,sendMessage.getItem());
-			waitSem1.getItem().release();
-			waitSem2.getItem().acquireUninterruptibly();
-		} catch (RegistrationException e) {
-			//Got it
-			gotException.setItem(true);
-			//Write!
-			message.setItem(read(channel));
-			waitSem2.getItem().release();
-			waitSem1.getItem().acquireUninterruptibly();
-		}
-		//Now we should both be out. Check we got the message, and the exception
-		assertTrue(gotException.getItem());
-		assertTrue(message.getItem().equals(sendMessage.getItem()));
-		logger.trace("testOneOne: complete");
+		logger.trace("testManyOne: complete");
 	}
 	
+	//The number of writers to include...
+	private static final int NO_WRITERS = 10;
+	
 	/**
-	 * This reads and writers between two threads very frequently for a fixed amount of time
-	 * to see if any rare concurrency bugs are caught...
+	 * Test that many writing threads and a reading thread can interract properly with each other.
 	 */
 	@Test
 	public void testStress() {
-		final Channel<Integer> channel = new OneOneChannel<Integer>();
-		Thread t1 = new Thread(new Runnable() {public void run() {
-			while (true) {
+		final Channel<Integer> channel = new ManyOneChannel<Integer>();
+		Thread[] threads = new Thread[NO_WRITERS];
+		for (int i=0; i<NO_WRITERS; i++) {
+			threads[i] = new Thread(new Runnable() {public void run() {
+				while(true) {
+					try {
+						write(channel,8);
+					} catch (ChannelClosed c) {
+						break;
+					} //finish
+				}
+			}});
+			threads[i].start();
+		}
+		//Get a reader going
+		Thread t = new Thread(new Runnable() {public void run() {
+			while(true) {
 				try {
 					read(channel);
-					write(channel,2);
 				} catch (ChannelClosed c) {
 					break;
-				}
+				} //finish
 			}
 		}});
-		Thread t2 = new Thread(new Runnable() {public void run() {
-			while (true) {
-				try {
-					write(channel,8);
-					read(channel);
-				} catch (ChannelClosed c) {
-					break;
-				}
-			}
-		}});
-		//Now execute the threads for a while...
-		t1.start();
-		t2.start();
+		t.start();
 		//Wait for a bit...
 		try {
 			Thread.sleep(2000);
