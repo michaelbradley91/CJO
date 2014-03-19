@@ -20,20 +20,20 @@ import com.softwire.it.cjo.utilities.Box;
  * Author:  michael<br>
  * ****************<br>
  * <br>
- * This class tests the correctness of the AsyncOneChannel.<br>
+ * This class tests the correctness of the AsyncManyChannel.<br>
  * Being asynchronous, this is actually a bit easier to test in a lot of ways...
  *
  */
-public class AsyncOneChannelTest {
+public class AsyncManyChannelTest {
 	//The logger for these tests
-	private final Logger logger = Logger.getLogger(AsyncOneChannelTest.class);
+	private final Logger logger = Logger.getLogger(AsyncManyChannelTest.class);
 
 	/**
 	 * Test that writing is asynchronous on this channel (readers should still wait for writers)
 	 */
 	@Test
 	public void testAsync() {
-		final Channel<Integer> channel = new AsyncOneChannel<Integer>();
+		final Channel<Integer> channel = new AsyncManyChannel<Integer>();
 		//Firstly, check that the reader must wait:
 		final Box<Semaphore> waitSem = new Box<Semaphore>(new Semaphore(0));
 		final Box<Long> time = new Box<Long>(0L);
@@ -84,7 +84,7 @@ public class AsyncOneChannelTest {
 	 */
 	@Test
 	public void testInterruptions() {
-		final Channel<Integer> channel = new AsyncOneChannel<Integer>();
+		final Channel<Integer> channel = new AsyncManyChannel<Integer>();
 		final Box<Boolean> gotException = new Box<Boolean>(false);
 		final Box<Semaphore> waitSem = new Box<Semaphore>(new Semaphore(0));
 		//Check that we can interrupt threads correctly...
@@ -141,14 +141,14 @@ public class AsyncOneChannelTest {
 	public void testChannelClosed() {
 		//This is quite painful - async one channels should be closed by closein, or close.
 		//We will check each one in turn...
-		final Box<Channel<Integer>> channel = new Box<Channel<Integer>>(new AsyncOneChannel<Integer>());
+		final Box<Channel<Integer>> channel = new Box<Channel<Integer>>(new AsyncManyChannel<Integer>());
 		final Box<Boolean> gotException = new Box<Boolean>(false);
 		final Box<Semaphore> waitSem = new Box<Semaphore>(new Semaphore(0));
 		//Check that we can interrupt threads correctly...
 		Thread t;
 		for (int i=0;i<2;i++) {
 			//i=0, closein, i=1, closeout, i=2, close
-			channel.setItem(new AsyncOneChannel<Integer>());
+			channel.setItem(new AsyncManyChannel<Integer>());
 			gotException.setItem(false);
 			//Firstly, try adding a reader, and catch the exception...
 			t = new Thread(new Runnable() {public void run() {
@@ -191,7 +191,7 @@ public class AsyncOneChannelTest {
 			//Done!
 		}
 		//Now check that the other closing possibilities have no effect...
-		channel.setItem(new AsyncOneChannel<Integer>());
+		channel.setItem(new AsyncManyChannel<Integer>());
 		closeWriteEnd(channel.getItem());
 		final Box<Integer> message = new Box<Integer>(0);
 		t = new Thread(new Runnable() {public void run() {
@@ -213,8 +213,8 @@ public class AsyncOneChannelTest {
 	 * Test that only one reader can use the channel at once...
 	 */
 	@Test
-	public void testAsyncOne() {
-		final Channel<Integer> channel = new AsyncOneChannel<Integer>();
+	public void testAsyncMany() {
+		final Channel<Integer> channel = new AsyncManyChannel<Integer>();
 		final Box<Boolean> gotException = new Box<Boolean>(false);
 		final Box<Semaphore> waitSem1 = new Box<Semaphore>(new Semaphore(0));
 		final Box<Semaphore> waitSem2 = new Box<Semaphore>(new Semaphore(0));
@@ -254,7 +254,7 @@ public class AsyncOneChannelTest {
 		//Now we should both be out. Check we got the message, and the exception
 		assertTrue(gotException.getItem());
 		assertTrue(message.getItem().equals(sendMessage.getItem()));
-		logger.trace("testAsyncOne: complete");
+		logger.trace("testAsyncMany: complete");
 	}
 	//The number of writers to include...
 	private static final int NO_WRITERS = 10;
@@ -264,7 +264,7 @@ public class AsyncOneChannelTest {
 	 */
 	@Test
 	public void testStress() {
-		final Channel<Integer> channel = new AsyncOneChannel<Integer>();
+		final Channel<Integer> channel = new AsyncManyChannel<Integer>();
 		Thread[] threads = new Thread[NO_WRITERS];
 		for (int i=0; i<NO_WRITERS; i++) {
 			threads[i] = new Thread(new Runnable() {public void run() {
