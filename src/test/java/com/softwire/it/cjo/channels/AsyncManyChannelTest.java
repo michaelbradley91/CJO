@@ -103,7 +103,7 @@ public class AsyncManyChannelTest {
 			Thread.sleep(2000);
 		} catch (InterruptedException e) {
 			//Problem
-			logger.warn("testSync: interrupted while waiting");
+			logger.warn("testAsync: interrupted while waiting");
 		}
 		//Get the messages...
 		//Read...
