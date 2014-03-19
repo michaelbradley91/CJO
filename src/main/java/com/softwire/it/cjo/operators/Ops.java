@@ -69,5 +69,44 @@ public class Ops {
 		new Write<Message>().write(channel,message);
 	}
 	
+	/**
+	 * Close the read end of a channel. This does nothing if that channel is already closed.
+	 * @param channel - the one to close
+	 */
+	public static <Message> void closeReadEnd(ChannelReader<Message> channel) {
+		new Close<Message>().closeReadEnd(channel);
+	}
+	
+	/**
+	 * Close the read end of a channel. This does nothing if that channel is already closed.
+	 * @param channel - the one to close
+	 */
+	public static <Message> void closeReadEnd(Channel<Message> channel) {
+		new Close<Message>().closeReadEnd(channel);
+	}
+	
+	/**
+	 * Close the write end of a channel. This does nothing if that channel is already closed.
+	 * @param channel - the one to close
+	 */
+	public static <Message> void closeWriteEnd(ChannelWriter<Message> channel) {
+		new Close<Message>().closeWriteEnd(channel);
+	}
+	
+	/**
+	 * Close the write end of a channel. This does nothing if that channel is already closed.
+	 * @param channel - the one to close
+	 */
+	public static <Message> void closeWriteEnd(Channel<Message> channel) {
+		new Close<Message>().closeWriteEnd(channel);
+	}
+	
+	/**
+	 * Close the channel. This does nothing if that channel is already closed.
+	 * @param channel - the one to close
+	 */
+	public static <Message> void close(Channel<Message> channel) {
+		new Close<Message>().close(channel);
+	}
 	
 }

@@ -53,16 +53,16 @@ public class ManyManyChannel<Message> extends AbstractChannel<Message> {
 	 * Has no effect on a many many channel
 	 */
 	@Override
-	protected void closeWriteEnd() {}
+	protected void closeWriteEndProtected() {}
 
 	/**
 	 * Has no effect on a many many channel
 	 */
 	@Override
-	protected void closeReadEnd() {}
+	protected void closeReadEndProtected() {}
 
 	@Override
-	protected void close() {
+	protected void closeProtected() {
 		hasClosed = true;
 	}
 

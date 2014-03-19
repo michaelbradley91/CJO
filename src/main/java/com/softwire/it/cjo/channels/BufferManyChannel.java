@@ -79,16 +79,16 @@ public class BufferManyChannel<Message> extends AbstractChannel<Message> {
 	 * Has no effect on a buffer many channel
 	 */
 	@Override
-	protected void closeWriteEnd() {}
+	protected void closeWriteEndProtected() {}
 
 	/**
 	 * Has no effect on a buffer many channel
 	 */
 	@Override
-	protected void closeReadEnd() {}
+	protected void closeReadEndProtected() {}
 
 	@Override
-	protected void close() {
+	protected void closeProtected() {
 		hasClosed = true;
 	}
 

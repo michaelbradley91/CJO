@@ -56,18 +56,18 @@ public class OneManyChannel<Message> extends AbstractChannel<Message> {
 	 * Completely closes a one many channel
 	 */
 	@Override
-	protected void closeWriteEnd() {
-		close();
+	protected void closeWriteEndProtected() {
+		closeProtected();
 	}
 
 	/**
 	 * Has no effect on a one many channel
 	 */
 	@Override
-	protected void closeReadEnd() {}
+	protected void closeReadEndProtected() {}
 
 	@Override
-	protected void close() {
+	protected void closeProtected() {
 		hasClosed = true;
 	}
 

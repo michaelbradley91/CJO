@@ -45,19 +45,19 @@ public abstract class Channel<Message> {
 	 * Close the write end of the channel (if this was already closed, this does nothing).
 	 * Whether or not this has any effect depends on the specific channel.
 	 */
-	protected abstract void closeWriteEnd();
+	protected abstract void closeWriteEndProtected();
 	
 	/**
 	 * Close the read end of the channel (if this was already closed, this does nothing).
 	 * Whether or not this has any effect depends on the specific channel.
 	 */
-	protected abstract void closeReadEnd();
+	protected abstract void closeReadEndProtected();
 	
 	/**
 	 * Close the channel. This closes the channel with certainty, meaning no further processes
 	 * can interact with it (and any waiting will be kicked or dropped in the case of asynchronous communication)
 	 */
-	protected abstract void close();
+	protected abstract void closeProtected();
 	
 	/**
 	 * @return - the read end of the channel (restricted to methods related to reading for separation)
