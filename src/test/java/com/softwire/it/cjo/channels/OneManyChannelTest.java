@@ -410,7 +410,7 @@ public class OneManyChannelTest {
 		logger.trace("testOneMany: complete");
 	}
 	//The number of writers to include...
-	private static final int NO_READER = 10;
+	private static final int NO_READERS = 10;
 	
 	/**
 	 * Test that many writing threads and a reading thread can interact properly with each other.
@@ -418,8 +418,8 @@ public class OneManyChannelTest {
 	@Test
 	public void testStress() {
 		final Channel<Integer> channel = new OneManyChannel<Integer>();
-		Thread[] threads = new Thread[NO_READER];
-		for (int i=0; i<NO_READER; i++) {
+		Thread[] threads = new Thread[NO_READERS];
+		for (int i=0; i<NO_READERS; i++) {
 			threads[i] = new Thread(new Runnable() {public void run() {
 				while(true) {
 					try {
