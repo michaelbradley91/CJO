@@ -1,5 +1,7 @@
 package com.softwire.it.cjo.operators;
 
+import java.util.concurrent.Callable;
+
 /**
  * ****************<br>
  * Date: 20/03/2014<br>
@@ -38,19 +40,58 @@ package com.softwire.it.cjo.operators;
  * 3. If a channel becomes closed while waiting on an alt or during the attempts to wait (somewhat countering what I said in 2.)
  * then the first channel closed exception encountered will be thrown.<br>
  * <br>
- * That's everything I think! Have fun!
+ * That's everything I think! Have fun!<br>
+ * <br>
+ * This Alt object itself is not thread safe, but the builder is. Don't execute multiple copies of this class at once,
+ * but do feel free to execute the rest.
  * 
  * @see AltBuilder
  *
  */
-public class Alt {
-
+public class Alt implements Runnable {
+	//The alt builder for this alt...
+	private final AltBuilder alt;
+	//The lists of channels and branches that actually matter on any given run
+	private Runnable[] branches;
+	private Channel<?>[] channels;
+	private boolean[] operations;
+	private Object[] messages;
+	private boolean hasOrElse;
+	private boolean hasAfter;
+	
+	//For our benefit...
+	private static final boolean READ = false, WRITE = true;
+	
 	/**
-	 * @param args
+	 * Construct a new Alt object!
+	 * @param altBuilder - the builder for this alt
 	 */
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+	public Alt(AltBuilder altBuilder) {
+		this.alt = altBuilder;
 	}
-
+	
+	//Filters out all of the false guards and throws any exceptions occurring. It
+	//fills all of the relevant arrays...
+	private void constructRelevantBranches() {
+		//Firstly, evaluate all of the guards in order...
+		boolean[] guardValues = new boolean[alt.getChannels().size()];
+		int index = 0;
+		for (Callable<Boolean> guard : alt.getGuards()) {
+			if (guard==null) {
+				guardValues[index] = true;
+			} else {
+				try {
+					guardValues[index] = guard.call();
+				} catch (Exception e) {
+					
+				}
+			}
+			index++;
+		}
+	}
+	
+	@Override
+	public void run() {
+		
+	}
 }
