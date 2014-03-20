@@ -199,6 +199,7 @@ public class OneOneChannelTest {
 			} else {
 				close(channel.getItem());
 			}
+			assertTrue(channel.getItem().isClosed());
 			//Wait for the exception
 			waitSem.getItem().acquireUninterruptibly();
 			//Now check
@@ -236,6 +237,7 @@ public class OneOneChannelTest {
 			} else {
 				close(channel.getItem());
 			}
+			assertTrue(channel.getItem().isClosed());
 			//Wait for the exception
 			waitSem.getItem().acquireUninterruptibly();
 			//Now check

@@ -270,6 +270,7 @@ public class AsyncManyChannelTest {
 			if (i==0) {
 				close(channel.getItem());
 			}
+			assertTrue(channel.getItem().isClosed());
 			//Wait for the exception
 			waitSem.getItem().acquireUninterruptibly();
 			//Now check

@@ -174,6 +174,7 @@ public class AsyncOneChannelTest {
 			} else {
 				close(channel.getItem());
 			}
+			assertTrue(channel.getItem().isClosed());
 			//Wait for the exception
 			waitSem.getItem().acquireUninterruptibly();
 			//Now check

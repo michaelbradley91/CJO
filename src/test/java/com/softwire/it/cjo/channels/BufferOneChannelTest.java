@@ -312,6 +312,7 @@ public class BufferOneChannelTest {
 			} else {
 				close(channel.getItem());
 			}
+			assertTrue(channel.getItem().isClosed());
 			//Wait for the exception
 			waitSem.getItem().acquireUninterruptibly();
 			//Now check
@@ -347,6 +348,7 @@ public class BufferOneChannelTest {
 			} else {
 				close(channel.getItem());
 			}
+			assertTrue(channel.getItem().isClosed());
 			//Wait for the exception
 			waitSem.getItem().acquireUninterruptibly();
 			//Now check
@@ -741,6 +743,7 @@ public class BufferOneChannelTest {
 			} else {
 				close(channel.getItem());
 			}
+			assertTrue(channel.getItem().isClosed());
 			//Wait for the exception
 			waitSem.getItem().acquireUninterruptibly();
 			//Now check
@@ -780,6 +783,7 @@ public class BufferOneChannelTest {
 			} else {
 				close(channel.getItem());
 			}
+			assertTrue(channel.getItem().isClosed());
 			//Wait for the exception
 			waitSem.getItem().acquireUninterruptibly();
 			//Now check
@@ -1047,6 +1051,7 @@ public class BufferOneChannelTest {
 			} else {
 				close(channel.getItem());
 			}
+			assertTrue(channel.getItem().isClosed());
 			//Wait for the exception
 			waitSem.getItem().acquireUninterruptibly();
 			//Now check

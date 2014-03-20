@@ -86,4 +86,9 @@ public class AsyncManyChannel<Message> extends AbstractChannel<Message> {
 			super.clearOutWaitingReadersAndWriters();
 		}
 	}
+
+	@Override
+	public boolean isClosed() {
+		return hasClosed;
+	}
 }

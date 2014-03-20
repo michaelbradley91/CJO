@@ -78,4 +78,9 @@ public class ManyOneChannel<Message> extends AbstractChannel<Message> {
 			super.clearOutWaitingReadersAndWriters();
 		}
 	}
+	
+	@Override
+	public boolean isClosed() {
+		return hasClosed;
+	}
 }

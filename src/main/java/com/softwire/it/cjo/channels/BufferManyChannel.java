@@ -122,4 +122,9 @@ public class BufferManyChannel<Message> extends AbstractChannel<Message> {
 			}
 		}
 	}
+	
+	@Override
+	public boolean isClosed() {
+		return hasClosed;
+	}
 }

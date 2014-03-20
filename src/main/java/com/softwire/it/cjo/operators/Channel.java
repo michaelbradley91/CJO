@@ -73,6 +73,14 @@ public abstract class Channel<Message> {
 		return writer;
 	}
 	
+	/**
+	 * Perform an asynchronous check to see if this channel is closed. Note that channels cannot re-open,
+	 * so if this returns true, then the channel is certainly and will remain closed. It will be true if you wait
+	 * until strictly after a channel closed exception.
+	 * @return - true if the channel is closed (false technically means nothing useful)
+	 */
+	public abstract boolean isClosed();
+	
 	/*
 	 * Any sub classes are expected to make use of the following methods to register and deregister
 	 * the interest of readers and writers for this channel. This is necessary for most operators
