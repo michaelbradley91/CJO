@@ -91,6 +91,18 @@ public class ImmutableList<T> implements Iterable<T> {
 	}
 	
 	/**
+	 * @param item - an item to check for containment
+	 * @return - true iff this list contains an item equal to this item
+	 */
+	public boolean contains(T item) {
+		if (item==null) {
+			return (item==null && this.item==null) || (isEmpty() ? false : tail().contains(item));
+		} else {
+			return (item.equals(this.item)) || (isEmpty() ? false : tail().contains(item));
+		}
+	}
+	
+	/**
 	 * The iterator returned here should only be used by one thread - it itself is not thread safe.
 	 * However, you can call other addition or removal operations as desired on this object.
 	 */
