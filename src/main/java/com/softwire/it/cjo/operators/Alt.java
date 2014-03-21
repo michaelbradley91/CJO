@@ -157,7 +157,6 @@ public class Alt implements Runnable {
 		//Evaluate the messages
 		messages = new Object[noBranches];
 		operations = new boolean[noBranches];
-		//TODO: fix index mistake
 		int activeIndex = 0;
 		index = 0;
 		for (BranchProcess<?> process : alt.getBranchProcesses()) {
@@ -311,9 +310,11 @@ public class Alt implements Runnable {
 		//had the resource before, so this won't deadlock with a waiting reader or writer)
 		manipulator = ResourceGraph.INSTANCE.acquireResource(resource); //only need the one resource this time - if no interaction
 		//took place, we will have all the dependencies. Otherwise, we don't require the other resources
-		afterTerminateSignal.setItem(true); //kill the after task if it wasn't killed already
-		ThreadScheduler.INSTANCE.interrupt(afterTask);
-		ThreadScheduler.INSTANCE.deschedule(afterTask);
+		if (hasAfter && activeBranch!=AFTER_BRANCH) {
+			afterTerminateSignal.setItem(true); //kill the after task if it wasn't killed already
+			ThreadScheduler.INSTANCE.interrupt(afterTask);
+			ThreadScheduler.INSTANCE.deschedule(afterTask);
+		}
 		//Now we can check who responded...
 		if (activeBranch==NO_BRANCH) {
 			assert(wasInterrupted);

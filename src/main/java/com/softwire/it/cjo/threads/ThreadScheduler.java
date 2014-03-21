@@ -8,14 +8,16 @@ import java.lang.Thread.UncaughtExceptionHandler;
  * Author:  michael<br>
  * ****************<br>
  * <br>
- * This abstract class specifies what the stripped down thread scheduler of CJO should provide
+ * This abstract class specifies what the stripped down thread scheduler of CJO should provide.
+ * Extenders of this class may assume that only one scheduler will be used.
  *
  */
 public abstract class ThreadScheduler {
 	/**
 	 * The application's thread scheduler
 	 */
-	public static final ThreadScheduler INSTANCE = new SimpleThreadScheduler();
+	public static final ThreadScheduler INSTANCE = SimpleThreadScheduler.INSTANCE;
+		
 	/**
 	 * ****************<br>
      * Date: 21/03/2014<br>
@@ -26,7 +28,7 @@ public abstract class ThreadScheduler {
  	 * to execute threads.
 	 *
 	 */
-	public abstract static class Task {};
+	public static class Task {};
 	
 	/**
 	 * Schedule the given task. It may begin immediately, but in a separate thread.
@@ -35,7 +37,7 @@ public abstract class ThreadScheduler {
 	public abstract void schedule(Task task);
 	
 	/**
-	 * Deschedule the task. This means it will not run strictly after this has call has returned.
+	 * Deschedule the task. This means it will not run strictly after this call has returned.
 	 * The task is not automatically interrupted, so you should do this beforehand if you desire to.
 	 * @param task - the task to deschedule
 	 */
@@ -51,7 +53,7 @@ public abstract class ThreadScheduler {
 	 * Construct a task from the runnable method.
 	 * @param task - the task to construct
 	 * @return - the Task that will be run (exceptions thrown by the task on its execution are thrown
-	 * into the thread which called this!) - not scheduled automatically
+	 * to any thread's exception handler running it!) - not scheduled automatically
 	 */
 	public abstract Task makeTask(Runnable task);
 	
