@@ -1,6 +1,6 @@
 package com.softwire.it.cjo.channels;
 
-import com.softwire.it.cjo.operators.Channel;
+import com.softwire.it.cjo.parallelresources.ResourceManipulator;
 
 /**
  * ****************<br>
@@ -22,13 +22,14 @@ import com.softwire.it.cjo.operators.Channel;
 public interface WaitingReader<Message> {
 	/**
 	 * This states that the channel was closed so no interaction on the channel will take place.
+	 * @param manipulator - the manipulator that holds the lock on the channel calling this method
 	 */
-	public void channelClosed();
+	public void channelClosed(ResourceManipulator manipulator);
 	
 	/**
 	 * Specifies that a writer has written to the this reader with the given message.
 	 * @param message - the message from the writer itself
-	 * @param channel - the channel this writer came on
+	 * @param manipulator - the manipulator that holds the lock on the channel calling this method
 	 */
-	public void writerArrived(Message message, Channel<Message> channel);
+	public void writerArrived(Message message, ResourceManipulator manipulator);
 }

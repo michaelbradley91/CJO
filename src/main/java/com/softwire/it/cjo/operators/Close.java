@@ -29,7 +29,7 @@ public class Close<Message> {
 		ResourceManipulator manipulator = ResourceGraph.INSTANCE.acquireResource(channel.getResource());
 		//Close the channel...
 		channel.closeReadEndProtected();
-		channel.update();
+		channel.update(manipulator);
 		manipulator.releaseResources();
 	}
 	
@@ -49,7 +49,7 @@ public class Close<Message> {
 		ResourceManipulator manipulator = ResourceGraph.INSTANCE.acquireResource(channel.getResource());
 		//Close the channel...
 		channel.closeWriteEndProtected();
-		channel.update();
+		channel.update(manipulator);
 		manipulator.releaseResources();
 	}
 	
@@ -69,7 +69,7 @@ public class Close<Message> {
 		ResourceManipulator manipulator = ResourceGraph.INSTANCE.acquireResource(channel.getResource());
 		//Close the channel...
 		channel.closeProtected();
-		channel.update();
+		channel.update(manipulator);
 		manipulator.releaseResources();
 	}
 }

@@ -1,6 +1,5 @@
 package com.softwire.it.cjo.operators;
 
-
 /**
  * ****************<br>
  * Date: 15/03/2014<br>

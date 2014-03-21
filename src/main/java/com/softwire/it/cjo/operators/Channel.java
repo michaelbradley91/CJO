@@ -133,6 +133,7 @@ public abstract class Channel<Message> {
 	 * This method is to be called once you are ready for the channel to update the interactions
 	 * between readers or writers (or to respond to its closed status). It is expected that the channel's resource
 	 * is still acquired. This is when your waiting readers or writers might receive responses.
+	 * @param manipulator - the manipulator holding the lock on this channel
 	 */
-	protected abstract void update();
+	protected abstract void update(ResourceManipulator manipulator);
 }

@@ -79,6 +79,7 @@ public final class ResourceManipulator {
 	
 	/**
 	 * Remove a resource from the graph, and implicitly any edges connected to it. If the resource doesn't exist, this has no effect.
+	 * Note that you do not have to re-add this resource - you can still use it if you keep hold of it as if it exists within the graph
 	 * @param resource - the resource to remove
 	 * @throws ResourceReleasedException - if this manipulator has released its resources already (because you told it to)
 	 * @throws ResourceNotHeldException - if the manipulator does not hold this resource, because it was not initially acquired (or added

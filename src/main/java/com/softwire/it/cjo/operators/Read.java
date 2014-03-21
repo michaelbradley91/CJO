@@ -67,7 +67,7 @@ public class Read<Message> implements WaitingReader<Message> {
 			throw exception;
 		}
 		//Now update the channel, and check for a response..
-		channel.update();
+		channel.update(manipulator);
 		if (closed || gotMessage) {
 			manipulator.releaseResources();
 			//We received a response already
@@ -96,7 +96,7 @@ public class Read<Message> implements WaitingReader<Message> {
 			} else {
 				//We were interrupted... I need to remove myself from this channel
 				channel.deregisterReader(myId);
-				channel.update();
+				channel.update(manipulator);
 				manipulator.releaseResources();
 				throw new ProcessInterruptedException(exception);
 			}
@@ -116,13 +116,13 @@ public class Read<Message> implements WaitingReader<Message> {
 	}
 
 	@Override
-	public void channelClosed() {
+	public void channelClosed(ResourceManipulator manipulator) {
 		closed = true;
 		waitSemaphore.release();
 	}
 
 	@Override
-	public void writerArrived(Message message, Channel<Message> channel) {
+	public void writerArrived(Message message, ResourceManipulator manipulator) {
 		gotMessage = true;
 		this.message = message;
 		waitSemaphore.release();

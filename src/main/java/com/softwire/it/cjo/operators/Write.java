@@ -70,7 +70,7 @@ public class Write<Message> implements WaitingWriter<Message> {
 			throw exception;
 		}
 		//Now update the channel, and check for a response..
-		channel.update();
+		channel.update(manipulator);
 		if (closed || wasRead) {
 			manipulator.releaseResources();
 			//We received a response already
@@ -99,7 +99,7 @@ public class Write<Message> implements WaitingWriter<Message> {
 			} else {
 				//We were interrupted... I need to remove myself from this channel
 				channel.deregisterWriter(myId);
-				channel.update();
+				channel.update(manipulator);
 				manipulator.releaseResources();
 				throw new ProcessInterruptedException(exception);
 			}
@@ -120,13 +120,13 @@ public class Write<Message> implements WaitingWriter<Message> {
 	}
 
 	@Override
-	public void channelClosed() {
+	public void channelClosed(ResourceManipulator manipulator) {
 		closed = true;
 		waitSemaphore.release();
 	}
 
 	@Override
-	public void readerArrived(Channel<Message> channel) {
+	public void readerArrived(ResourceManipulator manipulator) {
 		wasRead = true;
 		waitSemaphore.release();
 	}

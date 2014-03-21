@@ -2,6 +2,7 @@ package com.softwire.it.cjo.channels;
 
 import com.softwire.it.cjo.channels.ChannelFIFOQueue.Crate;
 import com.softwire.it.cjo.channels.exceptions.ChannelClosed;
+import com.softwire.it.cjo.parallelresources.ResourceManipulator;
 /**
  * ****************<br>
  * Date: 18/03/2014<br>
@@ -73,17 +74,17 @@ public class AsyncManyChannel<Message> extends AbstractChannel<Message> {
 	}
 
 	@Override
-	protected void update() {
+	protected void update(ResourceManipulator manipulator) {
 		//Firstly, flush the asynchronous pool...
 		while (waitingWriters.size()>0) {
 			WaitingWriter<Message> writer = waitingWriters.dequeue();
 			super.registerWriter(new DummyWaitingWriter<Message>(writer.getMessage()));
-			writer.readerArrived(this); //a bit of a lie...
+			writer.readerArrived(manipulator); //a bit of a lie...
 		}
 		//Complete the interactions...
-		super.completeWriterReaderInteractions();
+		super.completeWriterReaderInteractions(manipulator);
 		if (hasClosed) {
-			super.clearOutWaitingReadersAndWriters();
+			super.clearOutWaitingReadersAndWriters(manipulator);
 		}
 	}
 

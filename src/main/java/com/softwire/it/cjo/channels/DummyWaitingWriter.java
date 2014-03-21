@@ -1,6 +1,6 @@
 package com.softwire.it.cjo.channels;
 
-import com.softwire.it.cjo.operators.Channel;
+import com.softwire.it.cjo.parallelresources.ResourceManipulator;
 
 /**
  * ****************<br>
@@ -25,10 +25,10 @@ class DummyWaitingWriter<Message> implements WaitingWriter<Message> {
 	}
 
 	@Override
-	public void channelClosed() {}
+	public void channelClosed(ResourceManipulator manipulator) {}
 
 	@Override
-	public void readerArrived(Channel<Message> channel) {}
+	public void readerArrived(ResourceManipulator manipulator) {}
 
 	@Override
 	public Message getMessage() {

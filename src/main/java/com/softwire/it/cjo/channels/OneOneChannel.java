@@ -3,6 +3,7 @@ package com.softwire.it.cjo.channels;
 import com.softwire.it.cjo.channels.ChannelFIFOQueue.Crate;
 import com.softwire.it.cjo.channels.exceptions.ChannelClosed;
 import com.softwire.it.cjo.channels.exceptions.RegistrationException;
+import com.softwire.it.cjo.parallelresources.ResourceManipulator;
 /**
  * ****************<br>
  * Date: 18/03/2014<br>
@@ -80,11 +81,11 @@ public class OneOneChannel<Message> extends AbstractChannel<Message> {
 	}
 
 	@Override
-	protected void update() {
+	protected void update(ResourceManipulator manipulator) {
 		//Now see what we should do with readers or writers...
-		super.completeWriterReaderInteractions();
+		super.completeWriterReaderInteractions(manipulator);
 		if (hasClosed) {
-			super.clearOutWaitingReadersAndWriters();
+			super.clearOutWaitingReadersAndWriters(manipulator);
 		}
 	}
 	

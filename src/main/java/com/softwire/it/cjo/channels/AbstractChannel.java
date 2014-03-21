@@ -2,6 +2,7 @@ package com.softwire.it.cjo.channels;
 
 import com.softwire.it.cjo.channels.ChannelFIFOQueue.Crate;
 import com.softwire.it.cjo.operators.Channel;
+import com.softwire.it.cjo.parallelresources.ResourceManipulator;
 
 /**
  * ****************<br>
@@ -96,27 +97,29 @@ public abstract class AbstractChannel<Message> extends Channel<Message> {
 	/**
 	 * Tell all waiting readers and writers that they are to leave because the channel
 	 * has closed. This empties the readers and writers queue
+	 * @param manipulator - the resource manipulator holding the lock on this channel
 	 */
-	protected void clearOutWaitingReadersAndWriters() {
+	protected void clearOutWaitingReadersAndWriters(ResourceManipulator manipulator) {
 		while (hasReader()) {
-			getNextReader().channelClosed();
+			getNextReader().channelClosed(manipulator);
 		}
 		while (hasWriter()) {
-			getNextWriter().channelClosed();
+			getNextWriter().channelClosed(manipulator);
 		}
 	}
 	
 	/**
 	 * Automatically pairs of readers and writers from the queues until one list becomes empty
+	 * @param manipulator - the resource manipulator holding the lock on this channel
 	 */
-	protected void completeWriterReaderInteractions() {
+	protected void completeWriterReaderInteractions(ResourceManipulator manipulator) {
 		while (hasReader() && hasWriter()) {
 			//Communicate!
 			WaitingReader<Message> reader = getNextReader();
 			WaitingWriter<Message> writer = getNextWriter();
 			//Now awake them
-			reader.writerArrived(writer.getMessage(), this);
-			writer.readerArrived(this);
+			reader.writerArrived(writer.getMessage(), manipulator);
+			writer.readerArrived(manipulator);
 		}
 	}
 }

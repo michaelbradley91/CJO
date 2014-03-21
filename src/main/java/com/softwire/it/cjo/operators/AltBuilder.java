@@ -75,9 +75,9 @@ public class AltBuilder {
 	private final ImmutableList<Callable<Boolean>> guards;
 	//A list of processes to apply when a branch is activated... (maintained by the code
 	//to ensure they are in fact processes of the right type - a bit ugly)
-	private final ImmutableList<BranchProcess<?>> processes;
+	private final ImmutableList<BranchProcess<Object>> processes;
 	//A list of channels on which the processes are being applied
-	private final ImmutableList<Channel<?>> channels;
+	private final ImmutableList<Channel<Object>> channels;
 	//Whether or not there is an orelse branch
 	private final Runnable orElse;
 	private final Callable<Boolean> orElseGuard;
@@ -102,7 +102,7 @@ public class AltBuilder {
 	 * @return - the channels for all branches except the after and or else branches. Note that corresponding branches,
 	 * guards and processes are stored at the same indices within the immutable lists
 	 */
-	ImmutableList<Channel<?>> getChannels() {
+	ImmutableList<Channel<Object>> getChannels() {
 		return channels;
 	}
 	
@@ -110,7 +110,7 @@ public class AltBuilder {
 	 * @return - the branch processes for all branches except the after and or else branches. Note that corresponding branches,
 	 * guards and processes are stored at the same indices within the immutable lists
 	 */
-	ImmutableList<BranchProcess<?>> getBranchProcesses() {
+	ImmutableList<BranchProcess<Object>> getBranchProcesses() {
 		return processes;
 	}
 	
@@ -203,8 +203,8 @@ public class AltBuilder {
 	 */
 	public AltBuilder() {
 		guards = new ImmutableList<Callable<Boolean>>();
-		processes = new ImmutableList<BranchProcess<?>>();
-		channels = new ImmutableList<Channel<?>>();
+		processes = new ImmutableList<BranchProcess<Object>>();
+		channels = new ImmutableList<Channel<Object>>();
 		orElse = null;
 		after = null;
 		orElseGuard = null;
@@ -219,8 +219,8 @@ public class AltBuilder {
 	 * @param processes - the processes for the alt builder
 	 * @param channels - the channels for the alt builder
 	 */
-	private AltBuilder(ImmutableList<Callable<Boolean>> guards, ImmutableList<BranchProcess<?>> processes,
-			ImmutableList<Channel<?>> channels,Runnable orElse,Runnable after,long milliseconds,int nanoseconds,
+	private AltBuilder(ImmutableList<Callable<Boolean>> guards, ImmutableList<BranchProcess<Object>> processes,
+			ImmutableList<Channel<Object>> channels,Runnable orElse,Runnable after,long milliseconds,int nanoseconds,
 			Callable<Boolean> orElseGuard,Callable<Boolean> afterGuard) {
 		this.guards = guards;
 		this.processes = processes;
@@ -241,6 +241,7 @@ public class AltBuilder {
 	 * @return - an alt builder with this branch added
 	 * @throws IllegalArgumentException - if channel or process is null, or if the channel has been added to a branch before
 	 */
+	@SuppressWarnings("unchecked")
 	public <Message> AltBuilder addReadBranch(Channel<Message> channel, Callable<Boolean> guard, ReadProcess<Message> process) {
 		if (channel==null) {
 			throw new IllegalArgumentException("Cannot add a null channel to a branch");
@@ -248,10 +249,10 @@ public class AltBuilder {
 		if (process==null) {
 			throw new IllegalArgumentException("Cannot add a null process to a branch");
 		}
-		if (channels.contains(channel)) {
+		if (channels.contains((Channel<Object>)channel)) {
 			throw new IllegalArgumentException("Cannot include the same channel in two different branches");
 		}
-		return new AltBuilder(guards.add(guard),processes.add(process),channels.add(channel),
+		return new AltBuilder(guards.add(guard),processes.add((ReadProcess<Object>)process),channels.add((Channel<Object>)channel),
 				orElse,after,milliseconds,nanoseconds,orElseGuard,afterGuard);
 	}
 	/**
@@ -297,6 +298,7 @@ public class AltBuilder {
 	 * @return - an alt builder with this branch added
 	 * @throws IllegalArgumentException - if channel or process is null, or if the channel has been added to a branch before
 	 */
+	@SuppressWarnings("unchecked")
 	public <Message> AltBuilder addWriteBranch(Channel<Message> channel, Callable<Boolean> guard, WriteProcess<Message> process) {
 		if (channel==null) {
 			throw new IllegalArgumentException("Cannot add a null channel to a branch");
@@ -304,10 +306,10 @@ public class AltBuilder {
 		if (process==null) {
 			throw new IllegalArgumentException("Cannot add a null process to a branch");
 		}
-		if (channels.contains(channel)) {
+		if (channels.contains((Channel<Object>)channel)) {
 			throw new IllegalArgumentException("Cannot include the same channel in two different branches");
 		}
-		return new AltBuilder(guards.add(guard),processes.add(process),channels.add(channel),
+		return new AltBuilder(guards.add(guard),processes.add((WriteProcess<Object>)process),channels.add((Channel<Object>)channel),
 				orElse,after,milliseconds,nanoseconds,orElseGuard,afterGuard);
 	}
 	/**
@@ -458,7 +460,7 @@ public class AltBuilder {
 	 *
 	 * @param <Message> - the type of message involved
 	 */
-	private static abstract class BranchProcess<Message> {
+	protected static abstract class BranchProcess<Message> {
 		//Get the write process associated
 		protected abstract WriteProcess<Message> getWriteProcess();
 		//Get the read process associated
@@ -489,7 +491,7 @@ public class AltBuilder {
 		 * are acquired.
 		 * @return - the message you wish to write to this channel
 		 */
-		public abstract Message getMessage();
+		public abstract Message getMessage() throws Exception;
 		/**
 		 * Execute this branch
 		 */

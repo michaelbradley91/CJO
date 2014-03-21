@@ -3,6 +3,7 @@ package com.softwire.it.cjo.channels;
 import com.softwire.it.cjo.channels.ChannelFIFOQueue.Crate;
 import com.softwire.it.cjo.channels.exceptions.ChannelClosed;
 import com.softwire.it.cjo.channels.exceptions.RegistrationException;
+import com.softwire.it.cjo.parallelresources.ResourceManipulator;
 /**
  * ****************<br>
  * Date: 18/03/2014<br>
@@ -106,17 +107,17 @@ public class BufferOneChannel<Message> extends AbstractChannel<Message> {
 	}
 
 	@Override
-	protected void update() {
+	protected void update(ResourceManipulator manipulator) {
 		//Firstly, flush out the readers as much as possible...
-		super.completeWriterReaderInteractions();
+		super.completeWriterReaderInteractions(manipulator);
 		//Either there are no readers left, or no writers left in the buffer... Perform our interactions with fresh writers
 		while (super.hasReader() && !waitingWriters.isEmpty()) {
 			//Interact
 			WaitingReader<Message> reader = super.getNextReader();
 			WaitingWriter<Message> writer = waitingWriters.dequeue();
 			//Now awake them
-			reader.writerArrived(writer.getMessage(), this);
-			writer.readerArrived(this);
+			reader.writerArrived(writer.getMessage(), manipulator);
+			writer.readerArrived(manipulator);
 		}
 		//Now, either the buffer is empty and the fresh writers queue is empty and there are still readers,
 		//or there are no more readers...
@@ -124,14 +125,14 @@ public class BufferOneChannel<Message> extends AbstractChannel<Message> {
 		while (super.getNumberOfWriters()<capacity && !waitingWriters.isEmpty()) {
 			WaitingWriter<Message> writer = waitingWriters.dequeue();
 			super.registerWriter(new DummyWaitingWriter<Message>(writer.getMessage()));
-			writer.readerArrived(this); //a bit of a lie...
+			writer.readerArrived(manipulator); //a bit of a lie...
 		}
 		//Nothing may have happened above, but that's OK!
 		if (hasClosed) {
-			super.clearOutWaitingReadersAndWriters();
+			super.clearOutWaitingReadersAndWriters(manipulator);
 			//Clear out our own buffered writers..
 			while (!waitingWriters.isEmpty()) {
-				waitingWriters.dequeue().channelClosed(); //go!!
+				waitingWriters.dequeue().channelClosed(manipulator); //go!!
 			}
 		}
 	}
