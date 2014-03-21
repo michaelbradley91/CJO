@@ -33,6 +33,7 @@ public abstract class ThreadScheduler {
 	/**
 	 * Schedule the given task. It may begin immediately, but in a separate thread.
 	 * @param task - the task to be scheduled
+	 * @throws IllegalThreadStateException - if the task was scheduled before
 	 */
 	public abstract void schedule(Task task);
 	

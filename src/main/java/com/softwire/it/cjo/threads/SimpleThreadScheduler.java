@@ -52,6 +52,7 @@ class SimpleThreadScheduler extends ThreadScheduler {
 	@Override
 	public void deschedule(Task task) {
 		((MyTask)task).finishedSemaphore.acquireUninterruptibly();
+		((MyTask)task).finishedSemaphore.release();
 	}
 
 	@Override

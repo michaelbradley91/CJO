@@ -438,7 +438,6 @@ public class Alt implements Runnable {
 			gotReader = false;
 			wasRegisteredBadly = false;
 			closedException = null;
-			wasRegisteredBadly = false;
 			registrationException = null;
 			this.message = message;
 			this.channel = channel;
@@ -545,7 +544,11 @@ public class Alt implements Runnable {
 			this.branchNo = branchNo;
 			wasClosed = false;
 			gotWriter = false;
+			wasRegisteredBadly = false;
 			this.messageReceived = null;
+			registrationException = null;
+			closedException = null;
+			crate = null;
 			this.channel = channel;
 		}
 		@Override

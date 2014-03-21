@@ -25,6 +25,5 @@ public class AppTest {
 			}});
     	//Rigorous test
         assertTrue(true);
-        Thread.currentThread().getu
     }
 }
