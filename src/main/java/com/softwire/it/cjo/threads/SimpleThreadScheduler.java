@@ -33,6 +33,8 @@ class SimpleThreadScheduler extends ThreadScheduler {
 	static class MyTask extends Task {
 		private final Thread thread;
 		private final Semaphore finishedSemaphore;
+		private final Semaphore syncSemaphore;
+		private boolean wasStarted;
 		/**
 		 * Construct a new simple task keeping the current thread
 		 * @param thread - the thread the task is running in.
@@ -40,19 +42,42 @@ class SimpleThreadScheduler extends ThreadScheduler {
 		private MyTask(Thread thread, Semaphore finishedSemaphore) {
 			this.thread = thread;
 			this.finishedSemaphore = finishedSemaphore;
+			syncSemaphore = new Semaphore(1,true);
+			wasStarted = false;
 		}
 	}
 	
 	@Override
 	public void schedule(Task task) {
 		//Run it!!
-		((MyTask)task).thread.start();
+		MyTask myTask = (MyTask)task;
+		myTask.syncSemaphore.acquireUninterruptibly();
+		if (myTask.wasStarted) {
+			IllegalThreadStateException exception = new IllegalThreadStateException("Tried to start thread (name:" +
+					myTask.thread.getName() + ",id:" + myTask.thread.getId() + ") twice.");
+			myTask.syncSemaphore.release();
+			throw exception;
+		} else {
+			myTask.wasStarted = true;
+			myTask.thread.start();
+			myTask.syncSemaphore.release();
+		}
 	}
 
 	@Override
 	public void deschedule(Task task) {
-		((MyTask)task).finishedSemaphore.acquireUninterruptibly();
-		((MyTask)task).finishedSemaphore.release();
+		MyTask myTask = (MyTask)task;
+		myTask.syncSemaphore.acquireUninterruptibly();
+		if (!myTask.wasStarted) {
+			IllegalThreadStateException exception = new IllegalThreadStateException("Tried to stop a thread no started: (name:" +
+					myTask.thread.getName() + ",id:" + myTask.thread.getId() + ").");
+			myTask.syncSemaphore.release();
+			throw exception;
+		} else {
+			myTask.syncSemaphore.release();
+			myTask.finishedSemaphore.acquireUninterruptibly();
+			myTask.finishedSemaphore.release();
+		}
 	}
 
 	@Override
@@ -62,27 +87,26 @@ class SimpleThreadScheduler extends ThreadScheduler {
 
 	@Override
 	public Task makeTask(final Runnable task) {
-		return makeTask(task,Thread.currentThread().isDaemon());
+		//Construct the task...
+		final Semaphore finishedSemaphore = new Semaphore(0);
+		Thread thread = buildThread(task,finishedSemaphore);
+		return (Task)new MyTask(thread,finishedSemaphore);
 	}
 
 	@Override
 	public Task makeTask(final Runnable task, final UncaughtExceptionHandler handler) {
-		return makeTask(task,Thread.currentThread().isDaemon(),handler);
+		//Construct the task...
+		final Semaphore finishedSemaphore = new Semaphore(0);
+		Thread thread = buildThread(task,finishedSemaphore);
+		thread.setUncaughtExceptionHandler(handler);
+		return (Task)new MyTask(thread,finishedSemaphore);
 	}
 
 	@Override
 	public Task makeTask(final Runnable task, boolean isDaemon) {
 		//Construct the task...
 		final Semaphore finishedSemaphore = new Semaphore(0);
-		Thread thread = new Thread(new Runnable() {public void run() {
-			try {
-				task.run();
-				finishedSemaphore.release();
-			} catch (RuntimeException e) {
-				finishedSemaphore.release();
-				throw e;
-			}
-		}});
+		Thread thread = buildThread(task,finishedSemaphore);
 		thread.setDaemon(isDaemon);
 		return (Task)new MyTask(thread,finishedSemaphore);
 	}
@@ -92,7 +116,15 @@ class SimpleThreadScheduler extends ThreadScheduler {
 			UncaughtExceptionHandler handler) {
 		//Construct the task...
 		final Semaphore finishedSemaphore = new Semaphore(0);
-		Thread thread = new Thread(new Runnable() {public void run() {
+		Thread thread = buildThread(task,finishedSemaphore);
+		thread.setUncaughtExceptionHandler(handler);
+		thread.setDaemon(isDaemon);
+		return (Task)new MyTask(thread,finishedSemaphore);
+	}
+	
+	//To prevent code duplication - builds the standard thread
+	private Thread buildThread(final Runnable task, final Semaphore finishedSemaphore) {
+		return new Thread(new Runnable() {public void run() {
 			try {
 				task.run();
 				finishedSemaphore.release();
@@ -101,8 +133,5 @@ class SimpleThreadScheduler extends ThreadScheduler {
 				throw e;
 			}
 		}});
-		thread.setUncaughtExceptionHandler(handler);
-		thread.setDaemon(isDaemon);
-		return (Task)new MyTask(thread,finishedSemaphore);
 	}
 }
