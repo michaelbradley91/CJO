@@ -174,6 +174,9 @@ public class ImmutableList<T> implements Iterable<T> {
 	}
 	
 	public int hashCode() {
+		if (next==null) {
+			return 0; //the end of the list
+		}
 		//Recursively construct the hash code...
 		if (item==null) {
 			return 5 + 3*(next.hashCode());

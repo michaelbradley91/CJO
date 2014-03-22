@@ -109,4 +109,65 @@ public class Ops {
 		new Close<Message>().close(channel);
 	}
 	
+	/**
+	 * Execute an alt derived from an alt builder! Alts are rather complicated. For details, go to AltBuilder
+	 * and Alt. This operator will try to implement fairness between branches by random selection. (The guards
+	 * and message evaluations still take place in the same order if you were concerned)
+	 * @param builder - the builder used to construct this alt
+	 * @see Alt
+	 * @see AltBuilder
+	 */
+	public static void alt(AltBuilder builder) {
+		//Construct the alt
+		Alt alt = new Alt(builder);
+		//Randomly select the branch and run it!
+		alt.run(0, true);
+	}
+	
+	/**
+	 * Execute an alt derived from an alt builder! Alts are rather complicated. For details, go to AltBuilder
+	 * and Alt. This operator will give priority to branches in order of when they were added, with
+	 * the LAST branch having the highest priority. Sorry if that's a confusing way round! (The guards
+	 * and message evaluations still take place in the same order if you were concerned)
+	 * @param builder - the builder used to construct this alt
+	 * @see Alt
+	 * @see AltBuilder
+	 */
+	public static void priAlt(AltBuilder builder) {
+		//Construct the alt
+		Alt alt = new Alt(builder);
+		//Always start from the top
+		alt.run(0, false);
+	}
+	
+	/**
+	 * Execute an alt derived from an alt builder! Alts are rather complicated. For details, go to AltBuilder
+	 * and Alt. Serve runs the alt in a while loop (until an exception is thrown). The alt internally
+	 * will choose its branch priority randomly for fairness. This is considered more fair than round robin,
+	 * since unfortunate relationships between guards and branch activations could cause round robin to ignore a branch. (The guards
+	 * and message evaluations still take place in the same order if you were concerned)
+	 * @param builder - the builder used to construct this alt
+	 * @see Alt
+	 * @see AltBuilder
+	 */
+	public static void serve(AltBuilder builder) {
+		while(true) {
+			alt(builder);
+		}
+	}
+	
+	/**
+	 * Execute an alt derived from an alt builder! Alts are rather complicated. For details, go to AltBuilder
+	 * and Alt. PriServe runs the alt in a while loop (until an exception is thrown). The alt internally
+	 * will give priority to the branches in the order they were added, with the LAST branch having highest priority. (The guards
+	 * and message evaluations still take place in the same order if you were concerned)
+	 * @param builder - the builder used to construct this alt
+	 * @see Alt
+	 * @see AltBuilder
+	 */
+	public static void priServe(AltBuilder builder) {
+		while(true) {
+			priAlt(builder);
+		}
+	}
 }

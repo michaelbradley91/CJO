@@ -62,6 +62,16 @@ class SimpleThreadScheduler extends ThreadScheduler {
 
 	@Override
 	public Task makeTask(final Runnable task) {
+		return makeTask(task,Thread.currentThread().isDaemon());
+	}
+
+	@Override
+	public Task makeTask(final Runnable task, final UncaughtExceptionHandler handler) {
+		return makeTask(task,Thread.currentThread().isDaemon(),handler);
+	}
+
+	@Override
+	public Task makeTask(final Runnable task, boolean isDaemon) {
 		//Construct the task...
 		final Semaphore finishedSemaphore = new Semaphore(0);
 		Thread thread = new Thread(new Runnable() {public void run() {
@@ -73,11 +83,13 @@ class SimpleThreadScheduler extends ThreadScheduler {
 				throw e;
 			}
 		}});
+		thread.setDaemon(isDaemon);
 		return (Task)new MyTask(thread,finishedSemaphore);
 	}
 
 	@Override
-	public Task makeTask(final Runnable task, final UncaughtExceptionHandler handler) {
+	public Task makeTask(final Runnable task, boolean isDaemon,
+			UncaughtExceptionHandler handler) {
 		//Construct the task...
 		final Semaphore finishedSemaphore = new Semaphore(0);
 		Thread thread = new Thread(new Runnable() {public void run() {
@@ -90,6 +102,7 @@ class SimpleThreadScheduler extends ThreadScheduler {
 			}
 		}});
 		thread.setUncaughtExceptionHandler(handler);
+		thread.setDaemon(isDaemon);
 		return (Task)new MyTask(thread,finishedSemaphore);
 	}
 }

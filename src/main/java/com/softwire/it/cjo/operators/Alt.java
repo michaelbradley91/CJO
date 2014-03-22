@@ -1,6 +1,7 @@
 package com.softwire.it.cjo.operators;
 
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Semaphore;
@@ -46,10 +47,10 @@ import com.softwire.it.cjo.utilities.Box;
  * There are some important details regarding guards and write operations on a branch. You pass callable methods
  * into an alt so it can be evaluated on the fly (so that you can use the same alt builder in multiple locations - particularly
  * relevant to server...). When they are evaluated is obviously important in avoiding deadlock, so here's the law:<br>
- * 1. The guards are evaluated first sequentially, in the order of the branches as added to the alt builder,
+ * 1. The guards are evaluated first sequentially, in reverse order of the branches as added to the alt builder,
  * with the after branch always second to last, and the or else branch always last. No channels are locked at this point.<br>
  * 2. The branches with false guards are effectively removed. Then, for all the branches remaining, and branches with write
- * operations have their messages evaluated sequentially, in the order in which the remaining branches were added to the alt builder.
+ * operations have their messages evaluated sequentially, in reverse order in which the remaining branches were added to the alt builder.
  * No channels are locked at this point either.<br>
  * <br>
  * The alt handles exceptions in the following way:<br>
@@ -70,7 +71,7 @@ import com.softwire.it.cjo.utilities.Box;
  * @see AltBuilder
  *
  */
-public class Alt implements Runnable {
+public class Alt {
 	//The alt builder for this alt...
 	private final AltBuilder alt;
 	//The lists of channels and branches that actually matter on any given run
@@ -103,7 +104,7 @@ public class Alt implements Runnable {
 	 * Construct a new Alt object!
 	 * @param altBuilder - the builder for this alt
 	 */
-	public Alt(AltBuilder altBuilder) {
+	protected Alt(AltBuilder altBuilder) {
 		this.alt = altBuilder;
 		ResourceManipulator manipulator = ResourceGraph.INSTANCE.getManipulator();
 		resource = manipulator.addResource();
@@ -116,7 +117,7 @@ public class Alt implements Runnable {
 	 * Fills the operations, channels, and messages arrays, and sets hasOrElse and hasAfter.
 	 */
 	@SuppressWarnings("unchecked")
-	private void constructRelevantBranches() {
+	private void constructRelevantBranches(int startIndex, boolean chooseRandom) {
 		//Firstly, evaluate all of the guards in order...
 		boolean[] guardValues = new boolean[alt.getChannels().size()];
 		int index = 0;
@@ -215,7 +216,7 @@ public class Alt implements Runnable {
 		activeBranch = NO_BRANCH;
 		afterTask = null;
 		afterTerminateSignal = new Box<Boolean>(false);
-		performFirstPass();
+		performFirstPass(startIndex, chooseRandom);
 	}
 	
 	/*
@@ -226,19 +227,23 @@ public class Alt implements Runnable {
 	 * TODO: enable specific order from start index
 	 */
 	@SuppressWarnings("unchecked")
-	private void performFirstPass() {
+	private void performFirstPass(int startIndex, boolean chooseRandom) {
 		//We want to acquire the resources first...
 		ResourceManipulator manipulator = ResourceGraph.INSTANCE.acquireResources(resourceSet);
 		int noBranches = channels.length;
 		writers = (AltWaitingWriter<Object>[]) new AltWaitingWriter<?>[noBranches];
 		readers = (AltWaitingReader<Object>[]) new AltWaitingReader<?>[noBranches];
 		//Now, try registering an interest...
+		if (chooseRandom) {
+			startIndex = new Random().nextInt(noBranches);
+		}
 		for (int i=0; i<noBranches; i++) {
+			int index = (i+startIndex) % noBranches;
 			//Try registering..
-			if (operations[i]==READ) {
-				writers[i] = null;
-				readers[i] = new AltWaitingReader<Object>(i,channels[i]);
-				readers[i].registerSelf(manipulator);
+			if (operations[index]==READ) {
+				writers[index] = null;
+				readers[index] = new AltWaitingReader<Object>(index,channels[index]);
+				readers[index].registerSelf(manipulator);
 				//See if something happened...
 				if (activeBranch!=NO_BRANCH) {
 					//Something happened!!
@@ -246,9 +251,9 @@ public class Alt implements Runnable {
 					return; //quit
 				}
 			} else {
-				readers[i] = null;
-				writers[i] = new AltWaitingWriter<Object>(i,messages[i],channels[i]);
-				writers[i].registerSelf(manipulator);
+				readers[index] = null;
+				writers[index] = new AltWaitingWriter<Object>(index,messages[index],channels[index]);
+				writers[index].registerSelf(manipulator);
 				//See if something happened
 				if (activeBranch!=NO_BRANCH) {
 					//Something happened!!
@@ -627,8 +632,15 @@ public class Alt implements Runnable {
 		}
 	}
 	
-	@Override
-	public void run() {
-		constructRelevantBranches();
+	/**
+	 * Execute this alt! When the alt starts, it will first check if any of its branches are ready immediately.
+	 * It will check its branches sequentially in order of the given startBranch index (0 being the first branch)
+	 * and will continue in a round robin manner. However, once all branches have been checked for an immediate response,
+	 * if none responded it becomes first come first serve
+	 * @param startBranch - the branch to check for an interaction with first
+	 * @param chooseRandom - if true, overrides start branch and chooses the branch at random from those with true gaurds
+	 */
+	protected void run(int startBranch, boolean chooseRandom) {
+		constructRelevantBranches(startBranch, chooseRandom);
 	}
 }
