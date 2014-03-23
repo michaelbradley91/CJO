@@ -331,7 +331,7 @@ public class AltBuilder {
 	 * @return - an alt builder with this branch added
 	 * @throws IllegalArgumentException - if channel or process is null, or if the channel has been added to a branch before
 	 */
-	public <Message> AltBuilder addWriteBranch(ChannelReader<Message> channel, WriteProcess<Message> process) {
+	public <Message> AltBuilder addWriteBranch(ChannelWriter<Message> channel, WriteProcess<Message> process) {
 		return addWriteBranch(channel.getChannel(),process);
 	}
 	/**
@@ -344,7 +344,7 @@ public class AltBuilder {
 	 * @return - an alt builder with this branch added
 	 * @throws IllegalArgumentException - if channel or process is null, or if the channel has been added to a branch before
 	 */
-	public <Message> AltBuilder addWriteBranch(ChannelReader<Message> channel, Callable<Boolean> guard, WriteProcess<Message> process) {
+	public <Message> AltBuilder addWriteBranch(ChannelWriter<Message> channel, Callable<Boolean> guard, WriteProcess<Message> process) {
 		return addWriteBranch(channel.getChannel(),guard,process);
 	}
 	

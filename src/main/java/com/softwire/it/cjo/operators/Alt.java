@@ -144,13 +144,13 @@ public class Alt {
 		}
 		//Now work out the after branch situation
 		try {
-			hasAfter = alt.hasAfterBranch() && alt.getAfterGuard().call();
+			hasAfter = alt.hasAfterBranch() && (alt.getAfterGuard()==null ? true : alt.getAfterGuard().call());
 		} catch (Exception e) {
 			throw new GuardEvaluationException(e);
 		}
 		//Finally, the or else branch
 		try {
-			hasOrElse = alt.hasOrElseBranch() && alt.getOrElseGuard().call();
+			hasOrElse = alt.hasOrElseBranch() && (alt.getOrElseGuard()==null ? true : alt.getOrElseGuard().call());
 		} catch (Exception e) {
 			throw new GuardEvaluationException(e);
 		}
@@ -210,7 +210,6 @@ public class Alt {
 		}
 		//Work out the resource set
 		resourceSet = new HashSet<Resource>();
-		logger.trace("Got this many branches " + noBranches);
 		for (int i=0; i<noBranches; i++) {
 			resourceSet.add(channels[i].getResource());
 		}
@@ -234,13 +233,12 @@ public class Alt {
 	@SuppressWarnings("unchecked")
 	private void performFirstPass(int startIndex, boolean chooseRandom) {
 		//We want to acquire the resources first...
-		logger.trace("Resource set has this many resources " + resourceSet.size());
 		ResourceManipulator manipulator = ResourceGraph.INSTANCE.acquireResources(resourceSet);
 		int noBranches = channels.length;
 		writers = (AltWaitingWriter<Object>[]) new AltWaitingWriter<?>[noBranches];
 		readers = (AltWaitingReader<Object>[]) new AltWaitingReader<?>[noBranches];
 		//Now, try registering an interest...
-		if (chooseRandom) {
+		if (chooseRandom && noBranches>0) {
 			startIndex = new Random().nextInt(noBranches);
 		}
 		for (int i=0; i<noBranches; i++) {
@@ -592,9 +590,6 @@ public class Alt {
 		 */
 		private void registerSelf(ResourceManipulator manipulator) {
 			try {
-				logger.trace("Does the resource set have these resources? " + (resourceSet.contains(channel.getResource())
-						&& resourceSet.contains(resource)));
-				logger.trace("Resource set has this size " + resourceSet.size());
 				manipulator.addDependency(channel.getResource(), resource);
 				crate = channel.registerReader(this);
 				channel.update(manipulator); //update for immediate interactions
