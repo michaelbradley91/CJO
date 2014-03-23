@@ -64,11 +64,23 @@ import com.softwire.it.cjo.utilities.Box;
  * then the first channel closed exception encountered will be thrown.<br>
  * <br>
  * That's everything I think! Have fun!<br>
- * Oh! If you have an or else branch and an after branch, the or else branch will activate and the or else branch
+ * Oh! If you have an or else branch and an after branch, the or else branch will activate and the after branch
  * will be ignored. Got it!<br>
  * <br>
  * This Alt object itself is not thread safe, but the builder is. Don't execute multiple copies of this class at once,
- * but do feel free to execute the rest.
+ * but do feel free to execute the rest.<br>
+ * <br>
+ * TODO: make the alt thread safe with a semaphore (handle exceptions carefully!)
+ * If you think it is a good idea, it could help greatly with efficiency, as building this object over and over
+ * in a while loop is painful...
+ * <br>
+ * Actually, we reconstruct the arrays each time anyway, so I'm not sure how much it would save you.<br>
+ * However, making it truly thread safe is much harder than it might first appear due to exceptions
+ * being thrown at unfortunate times. In particular, correct termination
+ * of an after branch is a bit scary. (The after branch relies on it being this instance
+ * of an alt run - won't like it if it has come back in the middle of another alt run)<br>
+ * <br>
+ * It might not be a big deal in reality, but I'm not very confident so I'd leave this until later.<br>
  * 
  * @see AltBuilder
  *
@@ -322,7 +334,6 @@ public class Alt {
 		if (hasAfter && activeBranch!=AFTER_BRANCH) {
 			afterTerminateSignal.setItem(true); //kill the after task if it wasn't killed already
 			ThreadScheduler.INSTANCE.interrupt(afterTask);
-			ThreadScheduler.INSTANCE.deschedule(afterTask);
 		}
 		//Now we can check who responded...
 		if (activeBranch==NO_BRANCH) {
@@ -331,15 +342,27 @@ public class Alt {
 			deregisterAll();
 			manipulator.removeResource(resource);
 			manipulator.releaseResources();
+			if (hasAfter && activeBranch!=AFTER_BRANCH) {
+				//Wait for termination
+				ThreadScheduler.INSTANCE.deschedule(afterTask);
+			}
 			throw exception;
 		} else if (activeBranch==AFTER_BRANCH) {
 			//Run the after branch - already removed from the resource graph
 			manipulator.releaseResources();
+			if (hasAfter && activeBranch!=AFTER_BRANCH) {
+				//Wait for termination
+				ThreadScheduler.INSTANCE.deschedule(afterTask);
+			}
 			alt.getAfterBranch().run();
 			return;
 		} else {
 			//An ordinary branch responded!
 			handleInteraction(manipulator);
+			if (hasAfter && activeBranch!=AFTER_BRANCH) {
+				//Wait for termination
+				ThreadScheduler.INSTANCE.deschedule(afterTask);
+			}
 			return; //done!!
 		}
 	}

@@ -418,7 +418,7 @@ public class AltBuilder {
 	 * @throws IllegalStateException - if an after branch has been added already.
 	 */
 	public AltBuilder addAfterBranch(Callable<Boolean> guard, long milliseconds, Runnable after) {
-		return addAfterBranch(guard,milliseconds,after);
+		return addAfterBranch(guard,milliseconds,0,after);
 	}
 	
 	/**

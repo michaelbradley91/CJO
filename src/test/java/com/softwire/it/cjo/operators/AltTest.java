@@ -1,6 +1,7 @@
 package com.softwire.it.cjo.operators;
 
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Semaphore;
 
 import org.apache.log4j.Logger;
@@ -328,12 +329,208 @@ public class AltTest {
 		finishedSemaphore.acquireUninterruptibly();
 		assertTrue(aliceGotMessage.getItem());
 		assertTrue(aliceMessageBox.getItem().equals(message));
-		//Good work!
+		//Good work! Finally, for a special case, check that if there is an orelse and an after branch,
+		//then the or else branch activates first (always)
+		builder = new AltBuilder();
+		builder = builder.addAfterBranch(0, new Runnable() {public void run() {
+			fail("testOrElse: after branch managed to activate before or else");
+		}});
+		builder = builder.addOrElseBranch(new Runnable() {public void run() {
+			finishedSemaphore.release();
+		}});
+		//Run it...
+		builderBox.setItem(builder);
+		task = scheduler.makeTask(new Runnable() {public void run() {
+			alt(builderBox.getItem());
+		}});
+		scheduler.schedule(task);
+		//Wait for a bit
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			logger.warn("testOrElse: interrupted while waiting");
+		}
+		finishedSemaphore.acquireUninterruptibly();
+		//Done!
 		logger.trace("testOrElse: complete");
 	}
 	
+	/**
+	 * This test is designed to check the ability of the after branch to activate after the specified amount of time
+	 */
+	@Test
+	public void testAfter() {
+		final Semaphore finishedSemaphore = new Semaphore(0);
+		AltBuilder builder = new AltBuilder();
+		final Box<AltBuilder> builderBox = new Box<AltBuilder>(null);
+		//Construct an alt with only the after branch
+		builder = builder.addAfterBranch(1000, new Runnable() {public void run() {
+			finishedSemaphore.release();
+		}});
+		//Now run the alt
+		builderBox.setItem(builder);
+		Task task = scheduler.makeTask(new Runnable() {public void run() {
+			alt(builderBox.getItem());
+		}});
+		long startTime = System.currentTimeMillis();
+		scheduler.schedule(task);
+		//Now wait...
+		finishedSemaphore.acquireUninterruptibly();
+		//See how long that took
+		long endTime = System.currentTimeMillis();
+		assertTrue((endTime-startTime)>=500 && (endTime-startTime)<=1500);
+		//Good! Now check the after branch will activate when another branch is not ready...
+		final OneOneChannel<Integer> alice = new OneOneChannel<Integer>();
+		builder = builder.addReadBranch(alice, new ReadProcess<Integer>() {
+			@Override
+			public void run(Integer message) {
+				fail("testAfter: read a message from an inactive channel " + message);
+			}});
+		//Run it!
+		builderBox.setItem(builder);
+		task = scheduler.makeTask(new Runnable() {public void run() {
+			alt(builderBox.getItem());
+		}});
+		startTime = System.currentTimeMillis();
+		scheduler.schedule(task);
+		//Now wait...
+		finishedSemaphore.acquireUninterruptibly();
+		//See how long that took
+		endTime = System.currentTimeMillis();
+		assertTrue((endTime-startTime)>=500 && (endTime-startTime)<=1500);
+		//Good again! Now check that the after branch can be beaten to its execution
+		//We will write to Alice this time...
+		builder = new AltBuilder();
+		builder = builder.addAfterBranch(2000, new Runnable() {public void run() {
+			fail("testAfter: after branch activated earlier than write");
+		}});
+		final Box<Integer> aliceMessageBox = new Box<Integer>(0);
+		final Box<Boolean> aliceGotMessage = new Box<Boolean>(false);
+		builder = builder.addReadBranch(alice, new ReadProcess<Integer>() {
+			@Override
+			public void run(Integer message) {
+				aliceMessageBox.setItem(message);
+				aliceGotMessage.setItem(true);
+				finishedSemaphore.release();
+			}});
+		//Run it!
+		builderBox.setItem(builder);
+		task = scheduler.makeTask(new Runnable() {public void run() {
+			alt(builderBox.getItem());
+		}});
+		startTime = System.currentTimeMillis();
+		scheduler.schedule(task);
+		//Wait a bit
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			logger.warn("testAfter: interrupted while waiting");
+		}
+		int message = 8;
+		//Perform the write
+		write(alice,message);
+		//Now wait...
+		finishedSemaphore.acquireUninterruptibly();
+		//See how long that took
+		endTime = System.currentTimeMillis();
+		assertTrue((endTime-startTime)<=1500);
+		assertTrue(aliceGotMessage.getItem());
+		assertTrue(aliceMessageBox.getItem().equals(message));
+		//Wait for a bit to see if the after branch activates
+		try {
+			Thread.sleep(2500);
+		} catch (InterruptedException e) {
+			logger.warn("testAfter: interrupted while waiting");
+		}
+		//Probably ok!
+		logger.trace("testAfter: complete");
+	}
 	
+	//Some simple guards
+	private static class Guard implements Callable<Boolean> {
+		private boolean flag;
+		private Guard(boolean flag) {
+			this.flag = flag;
+		}
+		@Override
+		public Boolean call() throws Exception {
+			return flag;
+		}
+	}
 	
+	/**
+	 * This test is just to make sure that certain channels cannot interact
+	 * when the guard becomes false
+	 */
+	@Test
+	public void testGuards() {
+		//Firstly, check that the after and or else branches won't activate when they are not meant to
+		final Semaphore finishedSemaphore = new Semaphore(0);
+		AltBuilder builder = new AltBuilder();
+		final Box<AltBuilder> builderBox = new Box<AltBuilder>(null);
+		final Box<Integer> aliceMessageBox = new Box<Integer>(0);
+		final Box<Boolean> aliceGotMessage = new Box<Boolean>(false);
+		//After branch first
+		builder = builder.addAfterBranch(new Guard(false),500, new Runnable() {public void run() {
+			fail("testGuards: after branch activated with a false guard");
+		}});
+		//To prevent an exception
+		final OneOneChannel<Integer> alice = new OneOneChannel<Integer>();
+		builder = builder.addReadBranch(alice, new ReadProcess<Integer>() {
+			@Override
+			public void run(Integer message) {
+				aliceMessageBox.setItem(message);
+				aliceGotMessage.setItem(true);
+				finishedSemaphore.release();
+			}});
+		//Run it!
+		builderBox.setItem(builder);
+		Task task = scheduler.makeTask(new Runnable() {public void run() {
+			alt(builderBox.getItem());
+		}});
+		scheduler.schedule(task);
+		//Wait for a bit
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			logger.warn("testGuards: interrupted while waiting");
+		}
+		//Write to Alice
+		int message = 56;
+		write(alice,message);
+		//Now wait
+		finishedSemaphore.acquireUninterruptibly();
+		assertTrue(aliceGotMessage.getItem());
+		assertTrue(aliceMessageBox.getItem().equals(message));
+		aliceGotMessage.setItem(false);
+		//Now test the or else branch...
+		builder = builder.addOrElseBranch(new Guard(false), new Runnable() {public void run() {
+			fail("testGuards: or else branch activated with a false guard");
+		}});
+		//Run it!
+		builderBox.setItem(builder);
+		task = scheduler.makeTask(new Runnable() {public void run() {
+			alt(builderBox.getItem());
+		}});
+		scheduler.schedule(task);
+		//Wait for a bit
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			logger.warn("testGuards: interrupted while waiting");
+		}
+		//Write to Alice
+		message = 99;
+		write(alice,message);
+		//Now wait
+		finishedSemaphore.acquireUninterruptibly();
+		assertTrue(aliceGotMessage.getItem());
+		assertTrue(aliceMessageBox.getItem().equals(message));
+		//Good! Now see about normal branches...
+		//We'll need quite a few here...
+		
+		logger.trace("testGuards: complete");
+	}
 	
 	
 	

@@ -49,6 +49,9 @@ class SimpleThreadScheduler extends ThreadScheduler {
 	
 	@Override
 	public void schedule(Task task) {
+		if (task==null) {
+			throw new IllegalArgumentException();
+		}
 		//Run it!!
 		MyTask myTask = (MyTask)task;
 		myTask.syncSemaphore.acquireUninterruptibly();
@@ -66,6 +69,9 @@ class SimpleThreadScheduler extends ThreadScheduler {
 
 	@Override
 	public void deschedule(Task task) {
+		if (task==null) {
+			throw new IllegalArgumentException();
+		}
 		MyTask myTask = (MyTask)task;
 		myTask.syncSemaphore.acquireUninterruptibly();
 		if (!myTask.wasStarted) {
@@ -82,11 +88,17 @@ class SimpleThreadScheduler extends ThreadScheduler {
 
 	@Override
 	public void interrupt(Task task) {
+		if (task==null) {
+			throw new IllegalArgumentException();
+		}
 		((MyTask)task).thread.interrupt();
 	}
 
 	@Override
 	public Task makeTask(final Runnable task) {
+		if (task==null) {
+			throw new IllegalArgumentException();
+		}
 		//Construct the task...
 		final Semaphore finishedSemaphore = new Semaphore(0);
 		Thread thread = buildThread(task,finishedSemaphore);
@@ -95,6 +107,9 @@ class SimpleThreadScheduler extends ThreadScheduler {
 
 	@Override
 	public Task makeTask(final Runnable task, final UncaughtExceptionHandler handler) {
+		if (task==null || handler==null) {
+			throw new IllegalArgumentException();
+		}
 		//Construct the task...
 		final Semaphore finishedSemaphore = new Semaphore(0);
 		Thread thread = buildThread(task,finishedSemaphore);
@@ -104,6 +119,9 @@ class SimpleThreadScheduler extends ThreadScheduler {
 
 	@Override
 	public Task makeTask(final Runnable task, boolean isDaemon) {
+		if (task==null) {
+			throw new IllegalArgumentException();
+		}
 		//Construct the task...
 		final Semaphore finishedSemaphore = new Semaphore(0);
 		Thread thread = buildThread(task,finishedSemaphore);
@@ -114,6 +132,9 @@ class SimpleThreadScheduler extends ThreadScheduler {
 	@Override
 	public Task makeTask(final Runnable task, boolean isDaemon,
 			UncaughtExceptionHandler handler) {
+		if (task==null || handler==null) {
+			throw new IllegalArgumentException();
+		}
 		//Construct the task...
 		final Semaphore finishedSemaphore = new Semaphore(0);
 		Thread thread = buildThread(task,finishedSemaphore);
