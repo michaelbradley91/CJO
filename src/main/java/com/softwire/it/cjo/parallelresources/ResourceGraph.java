@@ -318,7 +318,7 @@ public final class ResourceGraph {
 	
 	/**
 	 * Acquire a list of resources from the graph. This will ensure all other resources dependent on what you wish to acquire are also
-	 * acquired to prevent any concurrency issues!
+	 * acquired to prevent any concurrency issues! This will destroy the set passed to it.
 	 * @param resources - the set of resources to acquire
 	 * @return - a resource manipulator that allows you to modify these resources (and any others implicitly acquired
 	 * due to dependencies, although it is best not to rely on these as you are unlikely to know the structure of the graph...)

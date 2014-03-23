@@ -6,6 +6,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Semaphore;
 
+import org.apache.log4j.Logger;
+
 import com.softwire.it.cjo.channels.ChannelFIFOQueue.Crate;
 import com.softwire.it.cjo.channels.WaitingReader;
 import com.softwire.it.cjo.channels.WaitingWriter;
@@ -72,6 +74,7 @@ import com.softwire.it.cjo.utilities.Box;
  *
  */
 public class Alt {
+	private final Logger logger = Logger.getLogger(Alt.class);
 	//The alt builder for this alt...
 	private final AltBuilder alt;
 	//The lists of channels and branches that actually matter on any given run
@@ -207,9 +210,11 @@ public class Alt {
 		}
 		//Work out the resource set
 		resourceSet = new HashSet<Resource>();
+		logger.trace("Got this many branches " + noBranches);
 		for (int i=0; i<noBranches; i++) {
 			resourceSet.add(channels[i].getResource());
 		}
+		resourceSet.add(resource);
 		//Drain the semaphore
 		waitSemaphore.drainPermits();
 		//Active branch removed
@@ -229,6 +234,7 @@ public class Alt {
 	@SuppressWarnings("unchecked")
 	private void performFirstPass(int startIndex, boolean chooseRandom) {
 		//We want to acquire the resources first...
+		logger.trace("Resource set has this many resources " + resourceSet.size());
 		ResourceManipulator manipulator = ResourceGraph.INSTANCE.acquireResources(resourceSet);
 		int noBranches = channels.length;
 		writers = (AltWaitingWriter<Object>[]) new AltWaitingWriter<?>[noBranches];
@@ -586,6 +592,9 @@ public class Alt {
 		 */
 		private void registerSelf(ResourceManipulator manipulator) {
 			try {
+				logger.trace("Does the resource set have these resources? " + (resourceSet.contains(channel.getResource())
+						&& resourceSet.contains(resource)));
+				logger.trace("Resource set has this size " + resourceSet.size());
 				manipulator.addDependency(channel.getResource(), resource);
 				crate = channel.registerReader(this);
 				channel.update(manipulator); //update for immediate interactions
