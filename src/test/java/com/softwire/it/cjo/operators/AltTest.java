@@ -515,7 +515,7 @@ public class AltTest {
 		scheduler.schedule(task);
 		//Wait for a bit
 		try {
-			Thread.sleep(1000);
+			Thread.sleep(500);
 		} catch (InterruptedException e) {
 			logger.warn("testGuards: interrupted while waiting");
 		}
@@ -526,9 +526,105 @@ public class AltTest {
 		finishedSemaphore.acquireUninterruptibly();
 		assertTrue(aliceGotMessage.getItem());
 		assertTrue(aliceMessageBox.getItem().equals(message));
+		aliceGotMessage.setItem(false);
 		//Good! Now see about normal branches...
 		//We'll need quite a few here...
-		
+		final Box<Integer> bobMessageBox = new Box<Integer>(0);
+		final Box<Boolean> bobGotMessage = new Box<Boolean>(false);
+		final OneOneChannel<Integer> bob = new OneOneChannel<Integer>();
+		final Box<Integer> bobsMessage = new Box<Integer>(36);
+		//Firstly, we'll see if we can interact with a channel with a false guard when it is immediately available...
+		task = scheduler.makeTask(new Runnable() {public void run() {
+			//Start trying to interact with bob...
+			write(bob,bobsMessage.getItem());
+		}});
+		//Start it
+		scheduler.schedule(task);
+		//Now wait a bit..
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			logger.warn("testGuards: interrupted while waiting");
+		}
+		//Now start the alt...
+		builder = new AltBuilder();
+		builder = builder.addReadBranch(bob, new Guard(false), new ReadProcess<Integer>() {
+			@Override
+			public void run(Integer message) {
+				bobMessageBox.setItem(message);
+				bobGotMessage.setItem(true);
+				finishedSemaphore.release();
+			}});
+		builder = builder.addReadBranch(alice, new Guard(true), new ReadProcess<Integer>() {
+			@Override
+			public void run(Integer message) {
+				aliceMessageBox.setItem(message);
+				aliceGotMessage.setItem(true);
+				finishedSemaphore.release();
+			}});
+		//Run it!
+		builderBox.setItem(builder);
+		task = scheduler.makeTask(new Runnable() {public void run() {
+			alt(builderBox.getItem());
+		}});
+		scheduler.schedule(task);
+		//Wait for a bit
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			logger.warn("testGuards: interrupted while waiting");
+		}
+		assertFalse(bobGotMessage.getItem() || aliceGotMessage.getItem());
+		//Now interact with alice...
+		message = 61;
+		write(alice,message);
+		finishedSemaphore.acquireUninterruptibly();
+		//Should have worked!
+		assertFalse(bobGotMessage.getItem());
+		assertTrue(aliceGotMessage.getItem() && aliceMessageBox.getItem().equals(message));
+		//free up bob
+		assertTrue(read(bob).equals(bobsMessage.getItem()));
+		bobsMessage.setItem(999);
+		bobGotMessage.setItem(false);
+		aliceGotMessage.setItem(false);
+		//Good! The next test is to see if a branch can interact when an interaction arrives late...
+		//Use the same alt
+		task = scheduler.makeTask(new Runnable() {public void run() {
+			alt(builderBox.getItem());
+		}});
+		scheduler.schedule(task);
+		//Wait a bit...
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			logger.warn("testGuards: interrupted while waiting");
+		}
+		//Firstly, we'll see if we can interact with a channel with a false guard when it is immediately available...
+		task = scheduler.makeTask(new Runnable() {public void run() {
+			//Start trying to interact with bob...
+			write(bob,bobsMessage.getItem());
+		}});
+		//Start it
+		scheduler.schedule(task);
+		//Wait a bit longer...
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			logger.warn("testGuards: interrupted while waiting");
+		}
+		//See if an interaction took place
+		assertFalse(bobGotMessage.getItem() || aliceGotMessage.getItem());
+		//Now interact with alice...
+		message = 455;
+		write(alice,message);
+		finishedSemaphore.acquireUninterruptibly();
+		//Should have worked!
+		assertFalse(bobGotMessage.getItem());
+		assertTrue(aliceGotMessage.getItem() && aliceMessageBox.getItem().equals(message));
+		//free up bob
+		assertTrue(read(bob).equals(bobsMessage.getItem()));
+		//Start trying to interact with Bob
+		//They are hopefully working...
 		logger.trace("testGuards: complete");
 	}
 	
