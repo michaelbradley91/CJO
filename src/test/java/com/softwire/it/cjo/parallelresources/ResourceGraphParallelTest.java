@@ -8,10 +8,14 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 
+import mjb.dev.cjo.parallelresources.Resource;
+import mjb.dev.cjo.parallelresources.ResourceGraph;
+import mjb.dev.cjo.parallelresources.ResourceManipulator;
+import mjb.dev.cjo.utilities.Box;
+
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
-import com.softwire.it.cjo.utilities.Box;
 
 /**
  * ****************<br>

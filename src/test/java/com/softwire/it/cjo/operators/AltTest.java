@@ -4,19 +4,21 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Semaphore;
 
+import mjb.dev.cjo.channels.OneOneChannel;
+import mjb.dev.cjo.operators.AltBuilder;
+import mjb.dev.cjo.operators.AltBuilder.ReadProcess;
+import mjb.dev.cjo.operators.AltBuilder.WriteProcess;
+import mjb.dev.cjo.operators.exceptions.ProcessInterruptedException;
+import mjb.dev.cjo.threads.ThreadScheduler;
+import mjb.dev.cjo.threads.ThreadScheduler.Task;
+import mjb.dev.cjo.utilities.Box;
+
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
-import com.softwire.it.cjo.channels.OneOneChannel;
-import com.softwire.it.cjo.operators.AltBuilder.ReadProcess;
-import com.softwire.it.cjo.operators.AltBuilder.WriteProcess;
-import com.softwire.it.cjo.operators.exceptions.ProcessInterruptedException;
-import com.softwire.it.cjo.threads.ThreadScheduler;
-import com.softwire.it.cjo.threads.ThreadScheduler.Task;
-import com.softwire.it.cjo.utilities.Box;
 
+import static mjb.dev.cjo.operators.Ops.*;
 import static org.junit.Assert.*;
-import static com.softwire.it.cjo.operators.Ops.*;
 
 /**
  * ****************<br>

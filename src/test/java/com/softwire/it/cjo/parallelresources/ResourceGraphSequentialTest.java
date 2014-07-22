@@ -5,11 +5,15 @@ import static org.junit.Assert.*;
 import java.util.HashSet;
 import java.util.Set;
 
+import mjb.dev.cjo.parallelresources.Resource;
+import mjb.dev.cjo.parallelresources.ResourceGraph;
+import mjb.dev.cjo.parallelresources.ResourceManipulator;
+import mjb.dev.cjo.parallelresources.exceptions.ResourceNotHeldException;
+import mjb.dev.cjo.parallelresources.exceptions.ResourceReleasedException;
+
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
-import com.softwire.it.cjo.parallelresources.exceptions.ResourceNotHeldException;
-import com.softwire.it.cjo.parallelresources.exceptions.ResourceReleasedException;
 
 /**
  * ****************<br>

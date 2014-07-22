@@ -2,6 +2,8 @@ package com.softwire.it.cjo.utilities;
 
 import static org.junit.Assert.*;
 
+import mjb.dev.cjo.utilities.ImmutableList;
+
 import org.apache.log4j.Logger;
 import org.junit.Test;
 

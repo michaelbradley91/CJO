@@ -2,10 +2,12 @@ package com.softwire.it.cjo.channels;
 
 import static org.junit.Assert.*;
 
+import mjb.dev.cjo.channels.ChannelFIFOQueue;
+import mjb.dev.cjo.channels.ChannelFIFOQueue.Crate;
+import mjb.dev.cjo.utilities.exceptions.EmptyFIFOQueueException;
+
 import org.junit.Test;
 
-import com.softwire.it.cjo.channels.ChannelFIFOQueue.Crate;
-import com.softwire.it.cjo.utilities.exceptions.EmptyFIFOQueueException;
 
 /**
  * ****************<br>

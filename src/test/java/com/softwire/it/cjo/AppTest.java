@@ -1,11 +1,12 @@
 package com.softwire.it.cjo;
 
 import static org.junit.Assert.*;
+import mjb.dev.cjo.channels.OneOneChannel;
+import mjb.dev.cjo.operators.AltBuilder;
+import mjb.dev.cjo.operators.AltBuilder.ReadProcess;
+
 import org.junit.Test;
 
-import com.softwire.it.cjo.channels.OneOneChannel;
-import com.softwire.it.cjo.operators.AltBuilder;
-import com.softwire.it.cjo.operators.AltBuilder.ReadProcess;
 
 
 /**

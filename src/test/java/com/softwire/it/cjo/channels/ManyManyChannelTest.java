@@ -2,15 +2,17 @@ package com.softwire.it.cjo.channels;
 
 import java.util.concurrent.Semaphore;
 
+import mjb.dev.cjo.channels.ManyManyChannel;
+import mjb.dev.cjo.channels.exceptions.ChannelClosed;
+import mjb.dev.cjo.operators.Channel;
+import mjb.dev.cjo.operators.exceptions.ProcessInterruptedException;
+import mjb.dev.cjo.utilities.Box;
+
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
-import com.softwire.it.cjo.channels.exceptions.ChannelClosed;
-import com.softwire.it.cjo.operators.Channel;
-import com.softwire.it.cjo.operators.exceptions.ProcessInterruptedException;
-import com.softwire.it.cjo.utilities.Box;
 
-import static com.softwire.it.cjo.operators.Ops.*;
+import static mjb.dev.cjo.operators.Ops.*;
 import static org.junit.Assert.*;
 
 /**

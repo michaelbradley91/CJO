@@ -3,11 +3,13 @@ package com.softwire.it.cjo.threads;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.Semaphore;
 
+import mjb.dev.cjo.threads.ThreadScheduler;
+import mjb.dev.cjo.threads.ThreadScheduler.Task;
+
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import com.softwire.it.cjo.threads.ThreadScheduler.Task;
 
 /**
  * ****************<br>
