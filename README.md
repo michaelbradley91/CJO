@@ -62,5 +62,3 @@ michael.bradley@hotmail.co.uk
 ###Implementation details:
 
 This is a Maven project that I store in a Mecurial Repo (pushing with hg-git). To set it up, make sure you have maven installed, and then you can use the Maven plugin for Eclipse fairly easily. I'm working with Maven 2.2.1 (I think~)
-
-#####Note:  Softwire is not involved in this project - it was the group id I used when setting up the maven project - I got into the habit of using web addresses. Sorry!!
